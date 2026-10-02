@@ -4,18 +4,24 @@ LiveSplit 内蔵の WebSocket サーバーに接続する、表示専用の Web 
 
 補助情報の取得には各コマンドに対応した LiveSplit が必要です。古いサーバーや未設定の値は「—」または未取得と表示します。応答がない項目は1分間取得を控え、ほかの表示を継続します。区間一覧の「通過」はスキップを含みます。任意の区間の実測タイムを読むコマンドはないため、区間ごとの履歴タイムは推測して表示しません。区間名は最大1000区間まで順次更新します。
 
-## 起動
+## 利用方法（Node.js不要）
 
 1. WebSocket サーバーを内蔵した LiveSplit を起動します。
 2. LiveSplit を右クリックし、**Control → Start WS Server** を選びます（TCP サーバーではありません）。既定のポートは **16834** です。
-3. Node.js 22.12 以降で、このリポジトリから次を実行します。
+3. ビルド済みの `dist/index.html` をブラウザーで開きます。自動で `ws://localhost:16834/livesplit` に接続します。
 
-   ```sh
-   npm ci
-   npm start
-   ```
+配布に必要なのはこのHTMLファイル1つだけです。JavaScriptとCSSはすべて埋め込まれており、利用側のNode.js・npm・HTTPサーバーは不要です。ソースの `index.html` ではなく、`dist/index.html` を開いてください。
 
-4. <http://localhost:5173> をブラウザーで開きます。自動で `ws://localhost:16834/livesplit` に接続します。
+## 開発・ビルド（開発者のみNode.jsが必要）
+
+Node.js 22.12以降で次を実行します。
+
+```sh
+npm ci
+npm run build
+```
+
+出力先は `dist/index.html` です。開発中は `npm run dev` でViteを起動し、<http://localhost:5173> を開けます。`npm start` と `npm run preview` も開発・確認用です。利用時には起動しません。
 
 タイマーは LiveSplit の現在の計測方法（Real Time / Game Time）に従います。Game Time が未初期化の場合、LiveSplit 側の仕様により Real Time が返ります。一時停止・リセット・終了・負の開始オフセットも受信した値をそのまま反映します。
 
@@ -28,16 +34,18 @@ LiveSplit 1.8.37では全区間一覧の取得に未対応です。この場合�
 接続先を変更する場合は `server` クエリに URL エンコードした WebSocket URL を指定します。
 
 ```text
-http://localhost:5173/?server=ws%3A%2F%2F127.0.0.1%3A16834%2Flivesplit
+file:///C:/LiveSplit.WebLayout/index.html?server=ws%3A%2F%2F127.0.0.1%3A16834%2Flivesplit
 ```
 
-OBS のブラウザソースには次の URL を設定すると、背景・説明・接続表示を省いたタイマーだけを表示します。サイズは幅 800、高さ 180 が目安です。HTTP サーバーは起動したままにしてください。
+上記パスは配置先に合わせて変更してください。
+
+OBSのブラウザソースで「ローカルファイル」を有効にして、ビルドした `index.html` を選択できます。タイマーだけを透過表示する場合は「ローカルファイル」を無効にして、URL欄に次のような `file:///` URLを指定してください。サイズは幅800、高さ180が目安です。
 
 ```text
-http://localhost:5173/?overlay=1
+file:///C:/LiveSplit.WebLayout/index.html?overlay=1
 ```
 
-`server` と `overlay=1` は `&` で組み合わせられます。ローカルの `ws://` 接続にはこの HTTP URL を使ってください。HTTPS 配信ページからの `ws://` 接続はブラウザーで拒否される場合があります。ブラウザーにローカルネットワーク接続の許可を求められた場合は許可してください。
+`server` と `overlay=1` は `&` で組み合わせられます。HTTPによる静的配信にも対応しますが、HTTPS配信ページからの `ws://` 接続はブラウザーで拒否される場合があります。ブラウザーにローカルネットワーク接続の許可を求められた場合は許可してください。
 
 未接続・無効な応答・応答の途絶時は `—:—.—` を表示し、2 秒後に再接続します。最後の値を現在時刻として残しません。通常表示には接続状況と案内が出ます。接続できない場合は WS サーバーの起動状態、LiveSplit 側のポート設定を確認してください。
 
@@ -57,7 +65,7 @@ npm run typecheck
 npm run build
 ```
 
-時刻形式と通信のテストは tsx と Node.js 標準のテストランナーを使用します。ビルド結果は `dist/` に出力され、`npm run preview` で確認できます。OBS で使用する場合も `npm start` またはプレビューサーバーを起動したままにしてください。
+時刻形式と通信のテストは tsx と Node.js 標準のテストランナーを使用します。ビルド後の `dist/index.html` は直接開いて確認できます。単一HTML化には開発依存の [vite-plugin-singlefile](https://github.com/richardtallent/vite-plugin-singlefile) を使用しています。
 
 実際の LiveSplit で WS サーバーを起動した状態で `npm run test:live` を実行すると、60 件の時刻応答とクライアントの切断後の自動再接続を確認できます。開始・停止・リセットは行いません。接続先は環境変数 `LIVESPLIT_URL` で変更できます。
 
