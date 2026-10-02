@@ -88,8 +88,8 @@ export function splitSummary(run: RunReadout) {
   };
 }
 
-export function renderReadout(run: RunReadout) {
-  const set = (id: string, text: string) => { document.getElementById(id)!.textContent = text; };
+export function renderReadout(run: RunReadout, root: ParentNode) {
+  const set = (id: string, text: string) => { for (const element of root.querySelectorAll(`[data-ls-field="${id}"]`)) element.textContent = text; };
   const get = (command: ReadCommand) => run.values.get(command);
   const phase = get('getcurrenttimerphase');
   const summary = splitSummary(run);
@@ -106,7 +106,7 @@ export function renderReadout(run: RunReadout) {
   set('previous-split', summary.previous);
   set('split-note', summary.note);
   set('delta', displayTime(get('getdelta'), true));
-  document.getElementById('delta')!.dataset.sign = get('getdelta')?.startsWith('-') ? 'ahead' : get('getdelta') ? 'behind' : '';
+  for (const element of root.querySelectorAll<HTMLElement>('[data-ls-field="delta"]')) element.dataset.sign = get('getdelta')?.startsWith('-') ? 'ahead' : get('getdelta') ? 'behind' : '';
   set('split-target', displayTime(get('getcomparisonsplittime')));
   set('last-split', displayTime(get('getlastsplittime')));
   set('best-possible', displayTime(get('getbestpossibletime')));
@@ -114,7 +114,8 @@ export function renderReadout(run: RunReadout) {
   set('final-label', phase === 'Ended' ? '完走タイム' : '比較の最終タイム');
   const index = Number(get('getsplitindex') ?? -1);
   set('split-progress', summary.progress);
-  const list = document.getElementById('splits')!;
+  const list = root.querySelector<HTMLElement>('[data-ls-field="splits"]');
+  if (!list) return;
   const history = run.history;
   const length = Math.max(run.count, ...[...history.rows.keys()].map(i => i + 1), 0);
   const signature = JSON.stringify([history.index, history.phase, length, [...run.names], [...history.rows]]);

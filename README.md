@@ -1,74 +1,125 @@
 # LiveSplit.WebLayout
 
-LiveSplit 内蔵の WebSocket サーバーに接続する、表示専用の Web UI です。現在のタイムを 1/100 秒まで表示します。ゲーム名・カテゴリ、走行状態、計測方法、比較名、比較との差、最速完走予測、比較の最終タイム（終了後は完走タイム）、区間一覧と現在区間、現在区間の比較累積タイム・直前の累積タイム、挑戦回数・完走回数も表示します。開始・停止・リセットなどの操作は LiveSplit 側で行います。
+LiveSplit内蔵WebSocketサーバーの情報を表示するHTMLパーツ集です。TypeScript + Viteで開発し、配布後はNode.js・npm・HTTPサーバーなしで利用できます。操作コマンドは送信しません。
 
-補助情報の取得には各コマンドに対応した LiveSplit が必要です。古いサーバーや未設定の値は「—」または未取得と表示します。応答がない項目は1分間取得を控え、ほかの表示を継続します。区間一覧の「通過」はスキップを含みます。任意の区間の実測タイムを読むコマンドはないため、区間ごとの履歴タイムは推測して表示しません。区間名は最大1000区間まで順次更新します。
+## ビルドと配布
 
-## 利用方法（Node.js不要）
-
-1. WebSocket サーバーを内蔵した LiveSplit を起動します。
-2. LiveSplit を右クリックし、**Control → Start WS Server** を選びます（TCP サーバーではありません）。既定のポートは **16834** です。
-3. ビルド済みの `dist/index.html` をブラウザーで開きます。自動で `ws://localhost:16834/livesplit` に接続します。
-
-配布に必要なのはこのHTMLファイル1つだけです。JavaScriptとCSSはすべて埋め込まれており、利用側のNode.js・npm・HTTPサーバーは不要です。ソースの `index.html` ではなく、`dist/index.html` を開いてください。
-
-## 開発・ビルド（開発者のみNode.jsが必要）
-
-Node.js 22.12以降で次を実行します。
+開発者のみNode.js 22.12以降が必要です。
 
 ```sh
 npm ci
 npm run build
 ```
 
-出力先は `dist/index.html` です。開発中は `npm run dev` でViteを起動し、<http://localhost:5173> を開けます。`npm start` と `npm run preview` も開発・確認用です。利用時には起動しません。
+`dist/` に次のファイルを出力します。
 
-タイマーは LiveSplit の現在の計測方法（Real Time / Game Time）に従います。Game Time が未初期化の場合、LiveSplit 側の仕様により Real Time が返ります。一時停止・リセット・終了・負の開始オフセットも受信した値をそのまま反映します。
+| ファイル | 用途 |
+| --- | --- |
+| `livesplit.js` | パーツを登録する通常のJavaScript。`type="module"`不要 |
+| `livesplit.css` | 任意の初期スタイル。編集・差し替え・省略可能 |
+| `index.html` | 全パーツの配置例。レイアウトやデザインはこのHTMLで編集 |
+| `timer.html` | OBS向けの透過タイマーだけの配置例 |
 
-## 接続先と OBS
+利用者には必要なHTMLとJS・CSSを同じフォルダーで渡します。LiveSplitで **Control → Start WS Server** を有効にし、HTMLをブラウザーで直接開いてください。OBSではブラウザソースの「ローカルファイル」でHTMLを選択します。`file://`での実動作は自動ブラウザーツールの制限により未検証です。通常のHTTP静的配信にも対応します。
 
-LiveSplit 1.8.37では全区間一覧の取得に未対応です。この場合も計測中の現在区間・直前区間・区間番号と累積タイムは表示します。Splits表は接続中に取得した区間を記録し、現在行を強調して累積タイムを更新します。終了した区間の比較差は、その区間の比較累積タイムを事前に取得できていた場合のみ表示します。取得前後の区間番号・走行状態が変わったサンプルは記録しません。
+配布物を編集しても再ビルドは不要です。ただし次のビルドで `dist/` は置き換わるため、自分のレイアウトは別フォルダーに保存してください。従来の単一HTML配布から変更しています。JS・CSSも一緒に配置してください。
 
-履歴はメモリー内のみで、リセット・切断・ページ再読み込みで消去します。途中接続・高速な連続スプリットで取り逃した区間やスキップの実測値は「—」です。区間を戻した場合はその区間以降の古い結果を取り除きます。旧版では比較や計測方法の切り替えを検出できないため、走行中に切り替えた場合はページを再読み込みしてください。待機中はサーバーが区間名を返さないため「開始待ち」と表示します。読み込んだ全区間の事前表示には対応版が必要です。
+## 好きなパーツを配置
 
-接続先を変更する場合は `server` クエリに URL エンコードした WebSocket URL を指定します。
+```html
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<link rel="stylesheet" href="./livesplit.css">
+<script defer src="./livesplit.js"></script>
 
-```text
-file:///C:/LiveSplit.WebLayout/index.html?server=ws%3A%2F%2F127.0.0.1%3A16834%2Flivesplit
+<livesplit-game></livesplit-game>
+<livesplit-splits></livesplit-splits>
+<livesplit-timer></livesplit-timer>
+<p>比較との差 <livesplit-value field="delta"></livesplit-value></p>
+<livesplit-status></livesplit-status>
+</html>
 ```
 
-上記パスは配置先に合わせて変更してください。
+| タグ | 表示内容 |
+| --- | --- |
+| `livesplit-timer` | 現在タイムと小数部 |
+| `livesplit-game` | ゲーム名・カテゴリ |
+| `livesplit-splits` | 区間名・比較差・累積タイムの表 |
+| `livesplit-status` | 接続状態 |
+| `livesplit-value field="…"` | 任意の単独項目 |
 
-OBSのブラウザソースで「ローカルファイル」を有効にして、ビルドした `index.html` を選択できます。タイマーだけを透過表示する場合は「ローカルファイル」を無効にして、URL欄に次のような `file:///` URLを指定してください。サイズは幅800、高さ180が目安です。
+不要なタグは削除し、自由に並べ替え・複製できます。同じ接続先のパーツは通信と走行履歴を共有します。最後のパーツを取り除くと接続を閉じます。独自のページ全体を書き換えたり、グローバルなIDに依存したりしません。
 
-```text
-file:///C:/LiveSplit.WebLayout/index.html?overlay=1
+`field`に指定できる項目:
+
+| field | 内容 |
+| --- | --- |
+| `time`, `whole`, `fraction` | 現在タイム全体・整数部・小数部 |
+| `game`, `category`, `phase` | ゲーム名・カテゴリ・走行状態 |
+| `method`, `comparison` | 計測方法・比較名 |
+| `delta`, `best-possible`, `final-time`, `final-label` | 比較差・最速完走予測・最終タイム・その説明 |
+| `current-split`, `previous-split`, `split-progress` | 現在区間・直前区間・進捗 |
+| `split-target`, `last-split` | 現在区間の比較累積タイム・直前の実測累積タイム |
+| `attempts`, `completed` | 挑戦・完走回数 |
+| `status`, `endpoint`, `split-note`, `readout-note` | 接続状態・接続先・補足説明 |
+
+## CSSと独自マークアップ
+
+Shadow DOMを使わないため、通常のCSSセレクターですべて装飾できます。付属CSSはパーツ内のみを対象とし、bodyの背景・配置・余白を指定しません。
+
+```html
+<style>
+  body { background: transparent; }
+  livesplit-timer { --ls-timer-size: 96px; --ls-accent: white; }
+  livesplit-splits { --ls-active-background: #345; --ls-ahead: lime; }
+  livesplit-splits th, livesplit-splits td { padding: 4px 12px; }
+</style>
 ```
 
-`server` と `overlay=1` は `&` で組み合わせられます。HTTPによる静的配信にも対応しますが、HTTPS配信ページからの `ws://` 接続はブラウザーで拒否される場合があります。ブラウザーにローカルネットワーク接続の許可を求められた場合は許可してください。
+主なCSS変数は `--ls-color`, `--ls-font`, `--ls-time-font`, `--ls-timer-size`, `--ls-accent`, `--ls-muted`, `--ls-border`, `--ls-active-background`, `--ls-ahead`, `--ls-behind` です。接続状態は各タグの `data-state="connecting|connected|disconnected|error"` に反映されます。
 
-未接続・無効な応答・応答の途絶時は `—:—.—` を表示し、2 秒後に再接続します。最後の値を現在時刻として残しません。通常表示には接続状況と案内が出ます。接続できない場合は WS サーバーの起動状態、LiveSplit 側のポート設定を確認してください。
+タグ内に独自HTMLを記述すると、既定のマークアップを生成せず、`data-ls-field` の箇所だけ更新します。名前は上のfield一覧と共通です。パーツ同士は入れ子にせず並べて配置してください。
 
-## 実装
+```html
+<livesplit-timer>
+  <strong data-ls-field="whole"></strong><small data-ls-field="fraction"></small>
+</livesplit-timer>
+```
 
-- HTML / CSS / TypeScript。Vite で開発・ビルドします。フレームワーク・外部フォント・実行時依存はありません。
-- タイマーは `getcurrenttime`、補助情報は `getgamename` や `getsplitname INDEX` などの読み取りコマンドのみを使用します。WebSocket メッセージに改行や JSON 包装は付けません。
-- 応答を受け取ってから約 33ms 後に次の取得を行います。リクエストは各接続で最大 1 件。タイマーの接続・応答タイムアウトは 3 秒です。補助情報は独立した接続を使い、タイムアウトは1秒です。応答がない場合は接続を作り直し、遅延応答が別コマンドの値と混ざるのを防ぎます。
-- `overlay=1` は従来どおりタイマーのみを表示し、補助情報の接続は行いません。
-- ローカルで時間を進める補間は行いません。Game Time のロード待ちや一時停止を正しく反映するためです。
-- `src/style.css` で見た目、`src/timer.ts` で通信と時刻整形を変更できます。
-- 開発用 HTTP サーバーは `127.0.0.1` のみに公開します。ポートは `npm start -- --port 5174` で変更できます。
+Splits表を独自に組む場合は、`tbody data-ls-field="splits"` を設けてください。そのtbodyの行はパーツが管理します。行には `active`、差分セルには `data-sign="ahead|behind"` が付くのでCSSで装飾できます。
+
+## 接続先
+
+既定は `ws://localhost:16834/livesplit`。各パーツの `server` 属性で指定できます。属性がない場合はページURLの `?server=…`、次に既定値の順で使用します。別の接続先を指定したパーツは別の通信を使います。
+
+```html
+<livesplit-timer server="ws://127.0.0.1:16834/livesplit"></livesplit-timer>
+```
+
+従来の `overlay=1` の代わりに `timer.html`、またはタイマーパーツだけを配置したHTMLを使ってください。
+
+## データと互換性
+
+- master対応版ではゲーム名・カテゴリ・全区間名を開始前から取得します。1.8.37など未対応のサーバーでは未取得項目は「—」、区間は取得できた範囲を表示します。
+- Splits表は接続中に取得した区間結果を記録します。比較差は比較累積タイムを事前取得できた区間のみ表示します。取り逃した区間は推測しません。
+- リセット・切断・再読み込み・最後のパーツ削除で履歴は消えます。区間巻き戻しでは該当区間以降の結果を消去します。
+- 計測方法や比較を走行中に切り替えた場合はページを再読み込みしてください。
+- タイマーはLiveSplitの計測方法に従い、取得間隔は応答後約33ms。ローカルで時刻を進める補間は行いません。
+- 同じ接続先ごとにタイマーと補助情報の2接続を使用し、それぞれ同時リクエストは1件です。
+- ゲーム名など外部の文字列はHTMLとして解釈せずテキストとして表示します。
+
+## 開発・検証
 
 ```sh
-npm test
-npm run typecheck
+npm run dev
 npm run build
+npm test
+npm run test:live
 ```
 
-時刻形式と通信のテストは tsx と Node.js 標準のテストランナーを使用します。ビルド後の `dist/index.html` は直接開いて確認できます。単一HTML化には開発依存の [vite-plugin-singlefile](https://github.com/richardtallent/vite-plugin-singlefile) を使用しています。
+`test:live`は起動中のLiveSplitに対する読み取り専用テストです。接続先は環境変数 `LIVESPLIT_URL` で変更できます。`npx tsx tests/mock-server.ts` では固定データのテストサーバーを起動します。
 
-実際の LiveSplit で WS サーバーを起動した状態で `npm run test:live` を実行すると、60 件の時刻応答とクライアントの切断後の自動再接続を確認できます。開始・停止・リセットは行いません。接続先は環境変数 `LIVESPLIT_URL` で変更できます。
+実装は `src/components.ts`（パーツ）、`src/session.ts`（共有接続）、`src/parts.css`（既定CSS）、`src/readout.ts` / `src/splits.ts`（表示・履歴）、`src/timer.ts`（通信）です。配置例はルートの `index.html` から出力されます。
 
-同テストでは補助情報の1巡取得と、未対応コマンドがある場合の継続動作も確認します。全項目の見た目を実走に影響させずに確認する場合は `npx tsx tests/mock-server.ts` を起動し、出力されるURLを開いてください。ポート16835の固定データを使用します。確認後はそのプロセスを終了し、通常のURLに戻してください。
-
-仕様の参照先: [LiveSplit 公式 README / The LiveSplit Server](https://github.com/LiveSplit/LiveSplit#the-livesplit-server)、[CommandServer.cs](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Server/CommandServer.cs)。サードパーティーの WebSocket プラグイン用の JSON プロトコルには対応していません。
+仕様: [LiveSplit公式README](https://github.com/LiveSplit/LiveSplit#the-livesplit-server)。サードパーティーのJSON形式WebSocketプラグインは対象外です。

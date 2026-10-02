@@ -1,38 +1,34 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark" />
-    <title>LiveSplit · Web Layout</title>
-    <link rel="stylesheet" href="./src/style.css" />
-    <script type="module" src="./src/main.ts"></script>
-  </head>
-  <body>
-    <main class="layout">
-      <header class="brand"><span class="brand-mark" aria-hidden="true">//</span> LiveSplit <span class="edition">WEB LAYOUT</span></header>
-      <section class="run-heading" aria-label="走行情報"><div><h1 id="game">ゲーム情報未取得</h1><p id="category">カテゴリ情報未取得</p></div><span class="phase" id="phase">—</span></section>
-      <section class="timer-card" aria-label="LiveSplit タイマー">
-        <div class="card-heading"><span>現在のタイム</span><span class="connection" id="status" role="status">接続中</span></div>
-        <div class="timer" id="timer" role="timer" aria-label="現在のタイム" aria-live="off"><span id="whole">—:—</span><span class="fraction" id="fraction">.—</span></div>
-        <div class="card-footer"><span id="method">—</span><span>比較: <span id="comparison">—</span></span></div>
-      </section>
-      <section class="stats" aria-label="タイム情報">
-        <div><span>比較との差</span><strong id="delta">—</strong></div>
-        <div><span>最速完走予測</span><strong id="best-possible">—</strong></div>
-        <div><span id="final-label">比較の最終タイム</span><strong id="final-time">—</strong></div>
-      </section>
-      <section class="split-card" aria-label="区間情報">
-        <div class="split-heading"><h2>区間情報</h2><span id="split-progress">取得待ち</span></div>
-        <div class="current-split"><span>現在の区間</span><strong id="current-split">—</strong></div>
-        <div class="current-split"><span>直前の区間</span><strong id="previous-split">—</strong></div>
-        <p class="readout-note" id="split-note"></p>
-        <div class="split-times"><span>比較の累積タイム <b id="split-target">—</b></span><span>直前の累積タイム <b id="last-split">—</b></span></div>
-        <div class="splits-scroll"><table class="splits-table" aria-label="Splits"><thead><tr><th scope="col">区間</th><th scope="col">比較差</th><th scope="col">累積タイム</th></tr></thead><tbody id="splits"></tbody></table></div>
-        <div class="run-counts"><span>挑戦回数 <b id="attempts">—</b></span><span>完走回数 <b id="completed">—</b></span></div>
-        <p class="readout-note" id="readout-note">情報は LiveSplit から順次更新されます。</p>
-      </section>
-      <footer class="help"><p id="hint">LiveSplit の WebSocket サーバーに接続しています。</p><code id="endpoint"></code></footer>
-    </main>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LiveSplit パーツ配置例</title>
+  <script type="module" src="./src/entry.ts"></script>
+  <!-- Layout belongs to this HTML. Reorder, remove or duplicate parts freely. -->
+  <style>
+    body { margin: 0; padding: 32px; background: #101318; color: #e8edf3; font-family: "Segoe UI", sans-serif; }
+    main { max-width: 760px; margin: auto; display: grid; gap: 24px; }
+    header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    livesplit-timer { text-align: center; --ls-timer-size: clamp(40px, 10vw, 100px); }
+    .metrics { display: flex; flex-wrap: wrap; gap: 32px; }
+    .metrics > div > span { font-size: 12px; opacity: .65; }
+    .metrics livesplit-value { font-size: 24px; }
+    .note { font-size: 12px; opacity: .6; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><livesplit-game></livesplit-game><livesplit-status></livesplit-status></header>
+    <livesplit-timer></livesplit-timer>
+    <livesplit-splits></livesplit-splits>
+    <div class="metrics">
+      <div><span>比較との差</span><livesplit-value field="delta"></livesplit-value></div>
+      <div><span>最速完走予測</span><livesplit-value field="best-possible"></livesplit-value></div>
+      <div><span>挑戦回数</span><livesplit-value field="attempts"></livesplit-value></div>
+      <div><span>状態</span><livesplit-value field="phase"></livesplit-value></div>
+    </div>
+    <livesplit-value class="note" field="split-note"></livesplit-value>
+  </main>
+</body>
 </html>
