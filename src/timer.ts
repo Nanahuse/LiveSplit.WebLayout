@@ -1,6 +1,7 @@
 // LiveSplit uses the constant TimeSpan format: [-][d.]hh:mm:ss[.fffffff].
 export interface TimerDisplay { whole: string; fraction: string }
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+export type ReadCommand = 'getgamename' | 'getcategoryname' | 'getcurrenttimerphase' | 'gettimingmethod' | 'getcomparisonname' | 'getattemptcount' | 'getcompletedcount' | 'getsplitcount' | 'getsplitindex' | 'getcurrentsplitname' | 'getcomparisonsplittime' | 'getlastsplittime' | 'getdelta' | 'getbestpossibletime' | 'getfinaltime' | `getsplitname ${number}`;
 export type TimerSocket = Pick<WebSocket, 'onopen' | 'onmessage' | 'onerror' | 'onclose' | 'send' | 'close'>;
 interface ConnectionOptions {
   onTime: (time: TimerDisplay) => void;
@@ -9,6 +10,10 @@ interface ConnectionOptions {
   interval?: number;
   timeout?: number;
   retry?: number;
+  readout?: {
+    nextCommand: () => ReadCommand;
+    onResponse: (command: ReadCommand, value: string | null) => void;
+  };
 }
 
 export function formatTime(value: string): TimerDisplay | null {
@@ -46,14 +51,17 @@ export class TimerConnection {
   private readonly interval: number;
   private readonly timeout: number;
   private readonly retry: number;
+  private readonly readout?: ConnectionOptions['readout'];
+  private command?: ReadCommand;
 
-  constructor(private readonly url: string, { onTime, onStatus, createSocket = (address) => new WebSocket(address), interval = 33, timeout = 3000, retry = 2000 }: ConnectionOptions) {
+  constructor(private readonly url: string, { onTime, onStatus, createSocket = (address) => new WebSocket(address), interval = 33, timeout = 3000, retry = 2000, readout }: ConnectionOptions) {
     this.onTime = onTime;
     this.onStatus = onStatus;
     this.createSocket = createSocket;
     this.interval = interval;
     this.timeout = timeout;
     this.retry = retry;
+    this.readout = readout;
   }
 
   start() {
@@ -79,10 +87,14 @@ export class TimerConnection {
       if (this.socket !== socket || !this.pending) return;
       this.pending = false;
       clearTimeout(this.deadline);
-      const time = typeof data === 'string' ? formatTime(data) : null;
-      if (!time) { this.fail(socket); return; }
+      if (this.readout && this.command) {
+        this.readout.onResponse(this.command, typeof data === 'string' ? data : null);
+      } else {
+        const time = typeof data === 'string' ? formatTime(data) : null;
+        if (!time) { this.fail(socket); return; }
+        this.onTime(time);
+      }
       this.onStatus('connected');
-      this.onTime(time);
       this.poll = setTimeout(() => this.request(socket), this.interval);
     };
     socket.onerror = socket.onclose = () => this.fail(socket);
@@ -91,13 +103,15 @@ export class TimerConnection {
   private request(socket: TimerSocket) {
     if (this.stopped || this.socket !== socket) return;
     this.pending = true;
+    this.command = this.readout?.nextCommand();
     this.deadline = setTimeout(() => this.fail(socket), this.timeout);
-    try { socket.send('getcurrenttime'); }
+    try { socket.send(this.command ?? 'getcurrenttime'); }
     catch { this.fail(socket); }
   }
 
   private fail(socket: TimerSocket) {
     if (this.socket !== socket) return;
+    if (this.pending && this.command) this.readout?.onResponse(this.command, null);
     this.release();
     this.reconnect();
   }

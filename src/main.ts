@@ -1,5 +1,6 @@
 import { getEndpoint, TimerConnection } from './timer.ts';
 import type { ConnectionStatus } from './timer.ts';
+import { RunReadout, renderReadout } from './readout.ts';
 
 const params = new URLSearchParams(location.search);
 document.documentElement.classList.toggle('overlay', params.get('overlay') === '1');
@@ -16,16 +17,30 @@ const messages: Record<ConnectionStatus, [string, string]> = {
 try {
   const endpoint = getEndpoint(location.search);
   document.querySelector<HTMLElement>('#endpoint')!.textContent = endpoint;
+  const run = new RunReadout();
+  let details: TimerConnection;
+  let previousState: ConnectionStatus | undefined;
   const connection = new TimerConnection(endpoint, {
     onTime(time) { whole.textContent = time.whole; fraction.textContent = time.fraction; },
     onStatus(state) {
       document.body.dataset.state = state;
       [status.textContent, hint.textContent] = messages[state];
-      if (state !== 'connected') { whole.textContent = '—:—'; fraction.textContent = '.—'; }
+      if (state !== 'connected') {
+        whole.textContent = '—:—'; fraction.textContent = '.—';
+        details?.stop(); run.clear(); renderReadout(run);
+      } else if (previousState !== state && params.get('overlay') !== '1') { details.start(); }
+      previousState = state;
+    },
+  });
+  details = new TimerConnection(endpoint, {
+    onTime() {}, onStatus() {}, interval: 33, timeout: 1000, retry: 250,
+    readout: {
+      nextCommand: () => run.nextCommand(),
+      onResponse(command, value) { run.receive(command, value); renderReadout(run); },
     },
   });
   connection.start();
-  window.addEventListener('pagehide', () => connection.stop());
+  window.addEventListener('pagehide', () => { connection.stop(); details.stop(); });
   window.addEventListener('pageshow', () => connection.start());
 } catch {
   document.body.dataset.state = 'error';

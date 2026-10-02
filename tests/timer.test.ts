@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatTime, getEndpoint, TimerConnection } from '../src/timer.ts';
 import type { TimerSocket, TimerDisplay, ConnectionStatus } from '../src/timer.ts';
+import type { ReadCommand } from '../src/timer.ts';
 
 test('formats LiveSplit TimeSpan values without rounding ahead', () => {
   for (const [input, whole, fraction] of [
@@ -105,4 +106,26 @@ test('connection timeout and invalid replies both trigger recovery', t => {
   connection.stop();
   t.mock.timers.tick(10000);
   assert.equal(sockets.length, 2);
+});
+
+test('readout timeouts invalidate the socket before the next command', t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const sockets: FakeSocket[] = [];
+  const replies: Array<[ReadCommand, string | null]> = [];
+  const commands: ReadCommand[] = ['getgamename', 'getcurrenttimerphase'];
+  const client = new TimerConnection('ws://localhost:16834/livesplit', {
+    onTime() { assert.fail('Readout must not update the timer'); }, onStatus() {},
+    createSocket: () => { const socket = new FakeSocket(); sockets.push(socket); return socket; },
+    readout: { nextCommand: () => commands.shift()!, onResponse: (command, value) => replies.push([command, value]) },
+  });
+  t.after(() => client.stop());
+  client.start(); sockets[0].open();
+  t.mock.timers.tick(3000);
+  assert.deepEqual(replies, [['getgamename', null]]);
+  t.mock.timers.tick(2000);
+  sockets[1].open();
+  sockets[0].message('Late name');
+  sockets[1].message('Paused');
+  assert.deepEqual(replies, [['getgamename', null], ['getcurrenttimerphase', 'Paused']]);
+  assert.equal(sockets[0].closed, true);
 });

@@ -11,10 +11,24 @@
   <body>
     <main class="layout">
       <header class="brand"><span class="brand-mark" aria-hidden="true">//</span> LiveSplit <span class="edition">WEB LAYOUT</span></header>
+      <section class="run-heading" aria-label="走行情報"><div><h1 id="game">ゲーム情報未取得</h1><p id="category">カテゴリ情報未取得</p></div><span class="phase" id="phase">—</span></section>
       <section class="timer-card" aria-label="LiveSplit タイマー">
         <div class="card-heading"><span>現在のタイム</span><span class="connection" id="status" role="status">接続中</span></div>
         <div class="timer" id="timer" role="timer" aria-label="現在のタイム" aria-live="off"><span id="whole">—:—</span><span class="fraction" id="fraction">.—</span></div>
-        <div class="card-footer"><span>LIVE TIMER</span><span>LiveSplit と同期</span></div>
+        <div class="card-footer"><span id="method">—</span><span>比較: <span id="comparison">—</span></span></div>
+      </section>
+      <section class="stats" aria-label="タイム情報">
+        <div><span>比較との差</span><strong id="delta">—</strong></div>
+        <div><span>最速完走予測</span><strong id="best-possible">—</strong></div>
+        <div><span id="final-label">比較の最終タイム</span><strong id="final-time">—</strong></div>
+      </section>
+      <section class="split-card" aria-label="区間情報">
+        <div class="split-heading"><h2>区間一覧</h2><span id="split-progress">区間情報なし</span></div>
+        <div class="current-split"><span>現在の区間</span><strong id="current-split">—</strong></div>
+        <div class="split-times"><span>比較の累積タイム <b id="split-target">—</b></span><span>直前の累積タイム <b id="last-split">—</b></span></div>
+        <ol id="splits"></ol>
+        <div class="run-counts"><span>挑戦回数 <b id="attempts">—</b></span><span>完走回数 <b id="completed">—</b></span></div>
+        <p class="readout-note" id="readout-note">情報は LiveSplit から順次更新されます。</p>
       </section>
       <footer class="help"><p id="hint">LiveSplit の WebSocket サーバーに接続しています。</p><code id="endpoint"></code></footer>
     </main>
