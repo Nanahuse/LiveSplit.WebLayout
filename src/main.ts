@@ -21,7 +21,12 @@ try {
   let details: TimerConnection;
   let previousState: ConnectionStatus | undefined;
   const connection = new TimerConnection(endpoint, {
-    onTime(time) { whole.textContent = time.whole; fraction.textContent = time.fraction; },
+    onTime(time) {
+      whole.textContent = time.whole; fraction.textContent = time.fraction;
+      run.liveTime = `${time.whole}${time.fraction}`;
+      const live = document.querySelector<HTMLElement>('[data-live]');
+      if (live) live.textContent = run.liveTime;
+    },
     onStatus(state) {
       document.body.dataset.state = state;
       [status.textContent, hint.textContent] = messages[state];

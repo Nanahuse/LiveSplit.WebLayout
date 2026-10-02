@@ -38,8 +38,14 @@ body:not([data-state="connected"]) .fraction { color: #82919f; }
 .current-split strong { font-size: 20px; overflow-wrap: anywhere; }
 .split-times, .run-counts { display: flex; flex-wrap: wrap; gap: 12px 28px; font-size: 12px; color: #93a4b5; }
 .split-times b, .run-counts b { color: #e8edf3; margin-left: 8px; font-family: Consolas, monospace; }
-#splits { list-style: none; padding: 0; margin: 20px 0; max-height: 340px; overflow-y: auto; }
-#splits li { display: flex; align-items: center; gap: 16px; padding: 12px; border-bottom: 1px solid #29323b; font-size: 13px; }
+.splits-scroll { margin: 20px 0; max-height: 400px; overflow: auto; }
+.splits-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.splits-table thead { position: sticky; top: 0; background: #171d24; color: #93a4b5; }
+.splits-table th, .splits-table td { padding: 13px 10px; border-bottom: 1px solid #29323b; text-align: right; }
+.splits-table th:first-child { text-align: left; font-weight: 500; overflow-wrap: anywhere; }
+.splits-table td { font-family: Consolas, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.splits-table thead th { font-size: 11px; white-space: nowrap; }
+.splits-table .splits-empty { text-align: center; white-space: normal; color: #93a4b5; padding: 28px 10px; }
 #splits .active { background: #234238; color: #9bf2cc; border-radius: 6px; }
 .split-number { color: #7f94a6; font-family: Consolas, monospace; }
 .split-name { flex: 1; overflow-wrap: anywhere; min-width: 0; }
