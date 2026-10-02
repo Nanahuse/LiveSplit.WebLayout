@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>LiveSplit · Web Layout</title>
+    <link rel="stylesheet" href="./src/style.css" />
+    <script type="module" src="./src/main.ts"></script>
+  </head>
+  <body>
+    <main class="layout">
+      <header class="brand"><span class="brand-mark" aria-hidden="true">//</span> LiveSplit <span class="edition">WEB LAYOUT</span></header>
+      <section class="timer-card" aria-label="LiveSplit タイマー">
+        <div class="card-heading"><span>現在のタイム</span><span class="connection" id="status" role="status">接続中</span></div>
+        <div class="timer" id="timer" role="timer" aria-label="現在のタイム" aria-live="off"><span id="whole">—:—</span><span class="fraction" id="fraction">.—</span></div>
+        <div class="card-footer"><span>LIVE TIMER</span><span>LiveSplit と同期</span></div>
+      </section>
+      <footer class="help"><p id="hint">LiveSplit の WebSocket サーバーに接続しています。</p><code id="endpoint"></code></footer>
+    </main>
+  </body>
+</html>
