@@ -9,15 +9,18 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "test:live": "tsx --test tests/live.integration.ts"
   },
   "engines": {
     "node": ">=22.12"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
+    "@types/ws": "^8.18.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "ws": "^8.22.0"
   }
 }

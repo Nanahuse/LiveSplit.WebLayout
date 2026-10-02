@@ -52,4 +52,6 @@ npm run build
 
 時刻形式と通信のテストは tsx と Node.js 標準のテストランナーを使用します。ビルド結果は `dist/` に出力され、`npm run preview` で確認できます。OBS で使用する場合も `npm start` またはプレビューサーバーを起動したままにしてください。
 
+実際の LiveSplit で WS サーバーを起動した状態で `npm run test:live` を実行すると、60 件の時刻応答とクライアントの切断後の自動再接続を確認できます。開始・停止・リセットは行いません。接続先は環境変数 `LIVESPLIT_URL` で変更できます。
+
 仕様の参照先: [LiveSplit 公式 README / The LiveSplit Server](https://github.com/LiveSplit/LiveSplit#the-livesplit-server)、[CommandServer.cs](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Server/CommandServer.cs)。サードパーティーの WebSocket プラグイン用の JSON プロトコルには対応していません。
