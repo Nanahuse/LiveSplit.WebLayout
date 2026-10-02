@@ -5,7 +5,7 @@ const responses: Record<string, string> = {
   getgamename: 'Celeste', getcategoryname: 'Any% · テスト表示',
   gettimingmethod: 'RealTime', getcomparisonname: 'Personal Best',
   getattemptcount: '42', getcompletedcount: '12', getsplitcount: '3', getsplitindex: '1',
-  getcurrentsplitname: 'Old Site', getdelta: '-00:00:03.4500000',
+  getcurrentsplitname: 'Old Site', getprevioussplitname: 'Forsaken City', getdelta: '-00:00:03.4500000',
   getcomparisonsplittime: '00:14:20', getlastsplittime: '00:05:23.4500000',
   getbestpossibletime: '00:28:10', getfinaltime: '00:30:00',
   'getsplitname 0': 'Forsaken City', 'getsplitname 1': 'Old Site', 'getsplitname 2': 'Celestial Resort',

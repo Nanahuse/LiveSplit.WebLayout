@@ -64,7 +64,7 @@ test('real LiveSplit: reads supplementary fields while tolerating unsupported co
       onResponse(command, value) {
         run.receive(command, value);
         if (!command.startsWith('getsplitname ')) seen.add(command);
-        if (seen.size === 15) finish();
+        if (seen.size === 16) finish();
       },
     },
   });

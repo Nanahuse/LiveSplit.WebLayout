@@ -1,6 +1,28 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { RunReadout, displayTime } from '../src/readout.ts';
+import { RunReadout, displayTime, splitSummary } from '../src/readout.ts';
+
+test('legacy servers show current and previous splits without a total count', () => {
+  const run = new RunReadout();
+  run.receive('getsplitcount', null);
+  run.receive('getcurrenttimerphase', 'NotRunning');
+  run.receive('getsplitindex', '-1');
+  assert.equal(splitSummary(run).current, '開始待ち');
+  assert.match(splitSummary(run).note, /全区間一覧はこのサーバーから取得できません/);
+  for (const phase of ['Running', 'Paused']) {
+    run.receive('getcurrenttimerphase', phase);
+    run.receive('getsplitindex', '1');
+    run.receive('getcurrentsplitname', 'Second');
+    run.receive('getprevioussplitname', 'First');
+    assert.equal(splitSummary(run).current, 'Second');
+    assert.equal(splitSummary(run).previous, 'First');
+    assert.equal(splitSummary(run).progress, '第 2 区間');
+  }
+  run.receive('getcurrenttimerphase', 'Ended');
+  assert.equal(splitSummary(run).progress, '完走');
+  run.receive('getcurrenttimerphase', 'NotRunning');
+  assert.equal(splitSummary(run).previous, '—');
+});
 
 test('handles absent times and signed deltas without displaying false zeroes', () => {
   assert.equal(displayTime('-'), '—');

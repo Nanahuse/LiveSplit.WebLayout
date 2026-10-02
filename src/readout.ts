@@ -2,7 +2,7 @@ import { formatTime } from './timer.ts';
 import type { ReadCommand } from './timer.ts';
 
 const commands: ReadCommand[] = [
-  'getcurrenttimerphase', 'getsplitindex', 'getcurrentsplitname', 'getdelta',
+  'getcurrenttimerphase', 'getsplitindex', 'getcurrentsplitname', 'getprevioussplitname', 'getdelta',
   'getcomparisonsplittime', 'getlastsplittime', 'getbestpossibletime', 'getfinaltime',
   'getgamename', 'getcategoryname', 'gettimingmethod', 'getcomparisonname',
   'getattemptcount', 'getcompletedcount', 'getsplitcount',
@@ -68,10 +68,28 @@ export function displayTime(value?: string, delta = false): string {
   return `${delta && !time.whole.startsWith('-') ? '+' : ''}${time.whole}${time.fraction}`;
 }
 
+export function splitSummary(run: RunReadout) {
+  const phase = run.values.get('getcurrenttimerphase');
+  const index = Number(run.values.get('getsplitindex') ?? -1);
+  const waiting = phase === 'NotRunning';
+  const ended = phase === 'Ended';
+  return {
+    current: waiting ? '開始待ち' : ended ? 'すべての区間が終了' : run.values.get('getcurrentsplitname') ?? '—',
+    previous: waiting ? '—' : run.values.get('getprevioussplitname') ?? '—',
+    progress: run.count ? `${ended ? run.count : Math.max(0, Math.min(index, run.count))} / ${run.count} 区間終了`
+      : waiting ? '開始待ち' : ended ? '完走' : index >= 0 ? `第 ${index + 1} 区間` : '取得待ち',
+    note: [
+      waiting ? 'LiveSplit で計測を開始すると現在区間が表示されます。' : '',
+      run.unavailable.has('getsplitcount') ? '全区間一覧はこのサーバーから取得できません。現在・直前区間と累積タイムを表示します。' : '',
+    ].filter(Boolean).join(' '),
+  };
+}
+
 export function renderReadout(run: RunReadout) {
   const set = (id: string, text: string) => { document.getElementById(id)!.textContent = text; };
   const get = (command: ReadCommand) => run.values.get(command);
   const phase = get('getcurrenttimerphase');
+  const summary = splitSummary(run);
   const phases: Record<string, string> = { NotRunning: '待機中', Running: '計測中', Paused: '一時停止', Ended: '完走' };
   set('phase', phases[phase ?? ''] ?? '—');
   set('game', get('getgamename') ?? 'ゲーム情報未取得');
@@ -81,7 +99,9 @@ export function renderReadout(run: RunReadout) {
   set('comparison', get('getcomparisonname') ?? '—');
   set('attempts', get('getattemptcount') ?? '—');
   set('completed', get('getcompletedcount') ?? '—');
-  set('current-split', phase === 'Ended' ? 'すべての区間が終了' : get('getcurrentsplitname') ?? '—');
+  set('current-split', summary.current);
+  set('previous-split', summary.previous);
+  set('split-note', summary.note);
   set('delta', displayTime(get('getdelta'), true));
   document.getElementById('delta')!.dataset.sign = get('getdelta')?.startsWith('-') ? 'ahead' : get('getdelta') ? 'behind' : '';
   set('split-target', displayTime(get('getcomparisonsplittime')));
@@ -90,7 +110,7 @@ export function renderReadout(run: RunReadout) {
   set('final-time', displayTime(get('getfinaltime')));
   set('final-label', phase === 'Ended' ? '完走タイム' : '比較の最終タイム');
   const index = Number(get('getsplitindex') ?? -1);
-  set('split-progress', run.count ? `${phase === 'Ended' ? run.count : Math.max(0, Math.min(index, run.count))} / ${run.count} 区間終了` : '区間情報なし');
+  set('split-progress', summary.progress);
   const list = document.getElementById('splits')!;
   const signature = JSON.stringify([index, phase, run.count, [...run.names]]);
   if (list.dataset.signature === signature) return;
