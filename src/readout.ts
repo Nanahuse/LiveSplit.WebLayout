@@ -82,7 +82,7 @@ export function splitSummary(run: RunReadout) {
     progress: run.count ? `${ended ? run.count : Math.max(0, Math.min(index, run.count))} / ${run.count} 区間終了`
       : waiting ? '開始待ち' : ended ? '完走' : index >= 0 ? `第 ${index + 1} 区間` : '取得待ち',
     note: [
-      waiting ? 'LiveSplit で計測を開始すると現在区間が表示されます。' : '',
+      waiting ? run.count > 0 ? '計測開始前の区間一覧です。開始すると現在区間とタイムが更新されます。' : 'LiveSplit で計測を開始すると現在区間が表示されます。' : '',
       run.unavailable.has('getsplitcount') ? '全区間一覧はこのサーバーから取得できません。接続中に取得した区間を順次表示します。' : '',
     ].filter(Boolean).join(' '),
   };

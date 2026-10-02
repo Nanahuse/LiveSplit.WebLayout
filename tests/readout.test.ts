@@ -2,6 +2,23 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RunReadout, displayTime, splitSummary } from '../src/readout.ts';
 
+test('master metadata populates the full split list before starting the timer', () => {
+  const run = new RunReadout();
+  run.receive('getgamename', 'Celeste');
+  run.receive('getcategoryname', 'Any%');
+  run.receive('getcurrenttimerphase', 'NotRunning');
+  run.receive('getsplitindex', '-1');
+  run.receive('getsplitcount', '2');
+  run.receive('getsplitname 0', 'Forsaken City');
+  run.receive('getsplitname 1', 'Old Site');
+  assert.equal(run.values.get('getgamename'), 'Celeste');
+  assert.equal(run.values.get('getcategoryname'), 'Any%');
+  assert.deepEqual([...run.names.values()], ['Forsaken City', 'Old Site']);
+  assert.equal(splitSummary(run).progress, '0 / 2 区間終了');
+  assert.match(splitSummary(run).note, /計測開始前の区間一覧/);
+  assert.equal(run.unavailable.size, 0);
+});
+
 test('legacy servers show current and previous splits without a total count', () => {
   const run = new RunReadout();
   run.receive('getsplitcount', null);
