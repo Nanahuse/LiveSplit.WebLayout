@@ -17,3 +17,10 @@ livesplit-splits .split-number { opacity: .55; }
 livesplit-splits .splits-empty { white-space: normal; text-align: center; opacity: .7; }
 [data-ls-part] [data-sign="ahead"] { color: var(--ls-ahead, #67e8b0); }
 [data-ls-part] [data-sign="behind"] { color: var(--ls-behind, #efad9d); }
+livesplit-splits [hidden] { display: none; }
+livesplit-splits[data-separators="false"] td, livesplit-splits[data-separators="false"] th { border-bottom: 0; }
+livesplit-splits .last-split { border-top: 2px solid var(--ls-border, #ffffff20); }
+livesplit-splits .split-blank { height: var(--ls-blank-height, 2.6em); }
+livesplit-splits[data-two-rows="true"] tbody tr { display: flex; flex-wrap: wrap; }
+livesplit-splits[data-two-rows="true"] tbody th { flex: 0 0 100%; box-sizing: border-box; }
+livesplit-splits[data-two-rows="true"] tbody td { flex: 1; }

@@ -44,7 +44,7 @@ test('columns preserve order, validate input and default Best Segments to segmen
   const columns = columnsFor(element({ columns: JSON.stringify([{ type: 'SegmentDelta', name: '<Best>', comparison: 'Best Segments' }, { type: 'SplitTime' }]) }));
   assert.equal(columns[0].name, '<Best>'); assert.equal(columns[1].comparison, '');
   assert.throws(() => columnsFor(element({ columns: '[{"type":"invalid"}]' })));
-  assert.throws(() => columnsFor(element({ columns: '[]' })));
+  assert.deepEqual(columnsFor(element({ columns: '[]' })), []);
 });
 test('visible split window follows current split, includes previews and pins final row', () => {
   assert.deepEqual(visibleSplits(10, 4, 5, 1, true), [2, 3, 4, 5, 9]);

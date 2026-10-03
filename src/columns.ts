@@ -1,23 +1,32 @@
 import { comparisonNames } from './comparisons.ts';
 import type { RunReadout } from './readout.ts';
 import { seconds } from './splits.ts';
+import { nativeSettings } from './split-settings.ts';
 
 export const columnTypes = ['SplitTime', 'SegmentTime', 'Delta', 'SegmentDelta', 'DeltaorSplitTime', 'SegmentDeltaorSegmentTime', 'ComparisonTime', 'LiveTime'] as const;
 export type ColumnType = typeof columnTypes[number];
-export interface Column { name: string; type: ColumnType; comparison: string }
+export interface Column { name: string; type: ColumnType; comparison: string; timingMethod?: string }
 export function columnsFor(root: Element): Column[] {
-  const json = root.getAttribute('columns');
+  const settings = nativeSettings(root);
+  const json = root.getAttribute('columns') ?? (settings.Columns === undefined ? null : JSON.stringify(settings.Columns));
   if (json !== null) {
     const columns: unknown = JSON.parse(json);
-    if (!Array.isArray(columns) || !columns.length || columns.length > 32) throw new Error('columns must contain 1–32 columns');
+    if (!Array.isArray(columns) || columns.length > 32) throw new Error('columns must contain 0–32 columns');
     return columns.map((column: unknown) => {
       if (!column || typeof column !== 'object') throw new Error('Invalid column');
-      const c = column as Partial<Column>;
+      const raw = column as Record<string, unknown>;
+      const c = { name: raw.Name ?? raw.name, type: raw.Type ?? raw.type, comparison: raw.Comparison ?? raw.comparison, timingMethod: raw.TimingMethod ?? raw.timingMethod ?? 'Current Timing Method' } as Partial<Column>;
+      if (typeof c.type === 'string') c.type = c.type.replaceAll(' ', '') as ColumnType;
       if (typeof c.type !== 'string' || !columnTypes.includes(c.type) || (c.name !== undefined && typeof c.name !== 'string') ||
         (c.comparison !== undefined && (typeof c.comparison !== 'string' || /[\r\n\0]/.test(c.comparison)))) throw new Error('Invalid column');
-      return { name: c.name ?? c.type, type: c.type, comparison: !c.comparison || c.comparison === 'Current Comparison' ? '' : c.comparison };
+      if (!['Current Timing Method', 'Real Time', 'Game Time'].includes(c.timingMethod!)) throw new Error('Invalid Timing Method');
+      if (['SegmentTime', 'SegmentDelta', 'SegmentDeltaorSegmentTime'].includes(c.type) && c.comparison === 'Best Split Times') c.comparison = '';
+      return { name: c.name ?? c.type, type: c.type, comparison: !c.comparison || c.comparison === 'Current Comparison' ? '' : c.comparison, timingMethod: c.timingMethod };
     });
   }
+  if (root.getAttribute('comparisons') === null) return [
+    { name: '+/-', type: 'Delta', comparison: '' }, { name: 'Time', type: 'SplitTime', comparison: '' },
+  ];
   return [...comparisonNames(root.getAttribute('comparisons')).flatMap<Column>(comparison => [
     { name: `${comparison || '現在の比較'} 累積タイム`, type: 'ComparisonTime', comparison },
     { name: `${comparison || '現在の比較'} ${comparison === 'Best Segments' ? '区間' : '累積'}差分`, type: comparison === 'Best Segments' ? 'SegmentDelta' : 'Delta', comparison },
@@ -32,6 +41,8 @@ export function liveSeconds(time: string): number | null {
 
 export function columnValue(run: RunReadout, index: number, column: Column, live: boolean): { value: number | null; delta: boolean } {
   const { type, comparison } = column;
+  const method = column.timingMethod;
+  if (method && method !== 'Current Timing Method' && method.replace(' ', '') !== run.values.get('gettimingmethod')) return { value: null, delta: type.includes('Delta') };
   const snapshot = run.comparisons.rows.get(index)?.get(comparison);
   const target = snapshot?.target ?? null;
   const actualText = run.history.rows.get(index)?.time;

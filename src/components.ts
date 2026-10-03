@@ -6,6 +6,7 @@ import { metrics, metricTemplate } from './metrics.ts';
 import { columnsFor } from './columns.ts';
 import { updateLiveSplits } from './split-view.ts';
 import { renderSegmentMetrics } from './segment-metrics.ts';
+import { splitSettings } from './split-settings.ts';
 
 const templates: Record<string, string> = {
   'livesplit-timer': '<span class="ls-timer" role="timer" aria-live="off"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></span>',
@@ -18,7 +19,7 @@ const templates: Record<string, string> = {
 
 // Light DOM allows ordinary CSS and user-supplied data-ls-field templates.
 class LiveSplitPart extends HTMLElement {
-  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'columns', 'live-delta', 'total-splits', 'upcoming-splits', 'always-show-last-split'];
+  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'settings', 'columns', 'live-delta', 'total-splits', 'upcoming-splits', 'always-show-last-split'];
   private unsubscribe?: () => void;
   connectedCallback() {
     this.setAttribute('data-ls-part', '');
@@ -48,11 +49,12 @@ class LiveSplitPart extends HTMLElement {
     try {
       const server = this.getAttribute('server');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
+      if (this.localName === 'livesplit-splits') splitSettings(this);
       const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : this.querySelector('[data-ls-field="live-segment-delta"]') ? [''] : [];
       this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons);
-    } catch {
+    } catch (error) {
       this.dataset.state = 'error';
-      for (const element of this.querySelectorAll('[data-ls-field]')) element.textContent = '接続先・列設定エラー';
+      for (const element of this.querySelectorAll('[data-ls-field]')) element.textContent = `設定エラー: ${error instanceof Error ? error.message : '接続先・列設定を確認してください'}`;
     } finally { previousSubscription?.(); }
   }
   private render(session: Session, tick: boolean) {

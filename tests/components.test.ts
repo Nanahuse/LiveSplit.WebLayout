@@ -23,6 +23,9 @@ test('parts share connections, render independently, and release sockets when re
   try {
     body.innerHTML = '<h1>My layout</h1><livesplit-timer></livesplit-timer><livesplit-timer><b data-ls-field="time"></b></livesplit-timer><livesplit-value field="phase"></livesplit-value><livesplit-splits></livesplit-splits>';
     assert.equal(sockets.length, 1);
+    const initialSplits = body.querySelector('livesplit-splits')!;
+    assert.deepEqual([...initialSplits.querySelectorAll('thead th')].map(th => th.textContent), ['区間', '+/-', 'Time']);
+    assert.ok(initialSplits.querySelector('thead tr')?.hasAttribute('hidden'));
     sockets[0].onopen?.();
     sockets[0].onmessage?.({ data: '00:01:23.4500000' });
     assert.equal(sockets.length, 2); // one timer + one metadata connection, not per part
@@ -79,18 +82,25 @@ test('parts share connections, render independently, and release sockets when re
       t.mock.timers.tick(33);
     }
     assert.equal(splits.querySelectorAll('thead th').length, 6);
+    assert.equal(splits.querySelectorAll('tbody tr').length, 8);
+    assert.equal(splits.querySelector('tbody tr:last-child')?.getAttribute('data-split-index'), '1');
+    assert.equal(splits.querySelector('.split-blank')?.textContent, '\u00a0');
+    splits.setAttribute('settings', JSON.stringify({ ShowColumnLabels: true, ShowBlankSplits: false, Display2Rows: true }));
+    assert.equal(splits.querySelectorAll('tbody tr').length, 2);
+    assert.equal(splits.querySelector('thead tr')?.hasAttribute('hidden'), false);
+    assert.equal(splits.getAttribute('data-two-rows'), 'true');
     const delta = () => splits.querySelector('.active [data-column="delta"][data-comparison="Personal Best"]')?.textContent;
-    assert.equal(delta(), '—');
+    assert.equal(delta(), '');
     sockets[0].onmessage?.({ data: '00:01:31' });
-    assert.equal(delta(), '-0:29.00');
+    assert.equal(delta(), '-29.0');
     const bestDelta = () => splits.querySelector('.active [data-column-type="SegmentDelta"]')?.textContent;
-    assert.equal(bestDelta(), '+0:01.00');
+    assert.equal(bestDelta(), '+1.0');
     assert.equal(text('livesplit-segment-timer'), '0:32.00');
     assert.equal(text('livesplit-live-segment'), '-0:27.75');
     t.mock.timers.tick(33);
     sockets[0].onmessage?.({ data: '00:01:32' });
-    assert.equal(delta(), '-0:28.00');
-    assert.equal(bestDelta(), '+0:02.00');
+    assert.equal(delta(), '-28.0');
+    assert.equal(bestDelta(), '+2.0');
     splits.setAttribute('columns', JSON.stringify([
       { type: 'SegmentDelta', comparison: 'Best Segments', name: '<Best>' },
       { type: 'DeltaorSplitTime', comparison: 'Personal Best', name: 'PB' },
@@ -98,10 +108,10 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(splits.querySelectorAll('thead th').length, 3);
     assert.equal(splits.querySelectorAll('thead th')[1].textContent, '<Best>');
     assert.equal(splits.querySelector('best'), null);
-    assert.equal(bestDelta(), '+0:02.00');
+    assert.equal(bestDelta(), '+2.0');
     splits.removeAttribute('columns');
     splits.setAttribute('live-delta', 'false');
-    assert.equal(delta(), '—');
+    assert.equal(delta(), '');
     assert.equal(sockets.length, 2);
     const best = body.querySelector('livesplit-best-possible-time')!;
     best.setAttribute('label', '<b>最速予測</b>');
@@ -128,7 +138,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(text('livesplit-live-segment'), '—');
     assert.equal(body.querySelector('livesplit-final-time .ls-label')?.textContent, '完走タイム');
     assert.equal(body.querySelector('livesplit-delta .ls-value')?.getAttribute('data-sign'), 'behind');
-    assert.equal(splits.querySelector('[data-split-index="1"] [data-column-type="SegmentDelta"]')?.textContent, '+0:02.00');
+    assert.equal(splits.querySelector('[data-split-index="1"] [data-column-type="SegmentDelta"]')?.textContent, '+2.0');
     body.querySelector('livesplit-timer')!.remove();
     assert.equal(sockets[0].closed, false);
     body.innerHTML = '';
