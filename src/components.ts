@@ -61,7 +61,7 @@ class LiveSplitPart extends HTMLElement {
       if (this.localName === 'livesplit-splits') splitSettings(this);
       const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : this.querySelector('[data-ls-field="live-segment-delta"]') ? [''] : [];
       if (this.localName === 'livesplit-detailed-timer') comparisons.push(...detailedComparisons(this));
-      if (this.querySelector('.ls-timer, [data-ls-field="time"]')) comparisons.push('Personal Best');
+      if (this.querySelector('.ls-timer, .ls-segment-time, [data-ls-field="time"], [data-ls-field="segment-time"]')) comparisons.push('');
       this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons, textVariables(this));
     } catch (error) {
       this.dataset.state = 'error';

@@ -1,8 +1,8 @@
 import type { RunReadout } from './readout.ts';
 import { seconds } from './splits.ts';
+import { liveSeconds } from './columns.ts';
 
-const events = new WeakMap<RunReadout, { index: number; at: number; best: boolean }>();
-export function recordStates(run: RunReadout, now = Date.now()) {
+export function recordStates(run: RunReadout) {
   const { index, phase } = run.history;
   const stable = run.values.get('getcurrenttimerphase') === phase && Number(run.values.get('getsplitindex')) === index
     && run.comparisons.phase === phase && run.comparisons.index === index;
@@ -17,20 +17,26 @@ export function recordStates(run: RunReadout, now = Date.now()) {
       if (delta !== null && delta < 0) best.add(i);
     }
   }
-  if (phase === 'NotRunning' || index < 0) events.delete(run);
-  else if (stable) {
-    const old = events.get(run);
-    if (!old || old.index !== index || old.best !== best.has(index - 1)) {
-      events.set(run, { index, at: now, best: best.has(index - 1) });
+  const current = liveSeconds(run.liveTime);
+  let timer = 'unknown';
+  if (stable && current !== null) {
+    if (phase === 'NotRunning' || current < 0) timer = 'not-running';
+    else if (phase === 'Paused') timer = 'paused';
+    else if (phase === 'Ended') {
+      const delta = run.comparisons.finalComparisonDelta;
+      timer = delta === undefined ? 'unknown' : delta === null || delta < 0 ? 'pb' : 'behind-losing';
+    } else if (phase === 'Running') {
+      const comparison = run.comparisons.rows.get(index)?.get('');
+      if (comparison) {
+        const delta = comparison.target === null ? null : current - comparison.target;
+        const previous = comparison.previousDelta;
+        timer = delta === null || delta <= 0
+          ? index > 0 && delta !== null && previous !== null && delta > previous ? 'ahead-losing' : 'ahead-gaining'
+          : index > 0 && previous !== null && delta < previous ? 'behind-gaining' : 'behind-losing';
+      }
     }
   }
-  const last = index - 1;
-  const actualText = run.history.rows.get(last)?.time;
-  const actual = actualText ? seconds(actualText) : null;
-  const target = run.comparisons.rows.get(last)?.get('Personal Best')?.target;
-  const pb = stable && phase === 'Ended' && actual !== null && target != null && actual < target;
-  const event = events.get(run);
-  return { pb, best, last, flash: stable && event?.index === index && event.best && now - event.at < 2000 };
+  return { pb: timer === 'pb', timer, best, last: index - 1 };
 }
 
 export function validateRecordEffects(root: Element) {
@@ -48,10 +54,12 @@ export function renderRecordColors(run: RunReadout, root: HTMLElement, connected
     element.dataset.recordEffect = connected && record ? effect : 'none';
   };
   for (const element of root.querySelectorAll<HTMLElement>('.ls-timer, [data-ls-field="time"]')) {
-    apply(element, state.pb ? 'pb' : state.flash ? 'bs' : '');
+    element.dataset.timerColor = connected ? state.timer : 'unknown';
+    apply(element, state.pb ? 'pb' : '');
   }
   for (const element of root.querySelectorAll<HTMLElement>('.ls-segment-time, [data-ls-field="segment-time"]')) {
-    apply(element, (run.history.phase === 'Ended' ? state.best.has(state.last) : state.flash) ? 'bs' : '');
+    element.dataset.timerColor = connected ? state.timer : 'unknown';
+    apply(element, state.pb ? 'pb' : '');
   }
   for (const element of root.querySelectorAll<HTMLElement>('[data-ls-field="previous-segment-time"]')) apply(element, state.best.has(state.last) ? 'bs' : '');
   for (const row of root.querySelectorAll<HTMLElement>('[data-split-index]')) {

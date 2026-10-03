@@ -21,6 +21,20 @@ test('comparison names preserve spaces, deduplicate and reject line breaks', () 
   assert.deepEqual(comparisonNames(' Personal Best | Best Segments |Personal Best|bad\nname'), ['Personal Best', 'Best Segments']);
   assert.deepEqual(comparisonNames(null), ['']);
 });
+
+test('ended selected-comparison delta distinguishes no comparison from a failed read', () => {
+  for (const [raw, expected] of [['-00:00:01', -1], ['00:00:00', 0], ['-', null], [null, undefined]] as const) {
+    const c = new Comparisons(); c.begin();
+    while (c.next()) {
+      const command = c.next()!;
+      c.receive(command === 'getcurrenttimerphase' ? 'Ended' : command === 'getsplitindex' ? '2'
+        : command === 'gettimingmethod' ? 'RealTime' : command === 'getcomparisonname' ? 'Average Segments'
+        : command === 'getdelta' ? raw : '-');
+    }
+    assert.equal(c.finalComparisonDelta, expected);
+    c.clear(); assert.equal(c.finalComparisonDelta, undefined);
+  }
+});
 test('live delta starts after best pace, stays live, and supports independent comparisons', () => {
   const c = new Comparisons(); sample(c);
   assert.equal(c.liveDelta(1, 'Personal Best', 89), null);

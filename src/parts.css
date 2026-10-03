@@ -57,6 +57,12 @@ livesplit-hotkey-indicator[orientation="vertical"] .ls-hotkey-bar { width: var(-
 livesplit-hotkey-indicator:not([show-text]) > .ls-label,
 livesplit-hotkey-indicator:not([show-text]) > .ls-value { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
 /* Record colors override the ordinary ahead/behind palette only when confirmed. */
+[data-ls-part] [data-timer-color="not-running"], [data-ls-part] [data-timer-color="unknown"] { color: var(--ls-not-running-color, var(--ls-muted, #82919f)); }
+[data-ls-part] [data-timer-color="paused"] { color: var(--ls-paused-color, #7a7a7a); }
+[data-ls-part] [data-timer-color="ahead-gaining"] { color: var(--ls-ahead-gaining-color, var(--ls-ahead, #00cc36)); }
+[data-ls-part] [data-timer-color="ahead-losing"] { color: var(--ls-ahead-losing-color, #52cc73); }
+[data-ls-part] [data-timer-color="behind-gaining"] { color: var(--ls-behind-gaining-color, #cc5c52); }
+[data-ls-part] [data-timer-color="behind-losing"] { color: var(--ls-behind-losing-color, var(--ls-behind, #cc1200)); }
 [data-ls-part] [data-record="pb"][data-record-effect="color"] { color: var(--ls-pb-color, #16a6ff); }
 [data-ls-part] [data-record="bs"][data-record-effect="color"] { color: var(--ls-bs-color, #ffd700); }
 [data-ls-part] [data-record][data-record-effect="rainbow"] { animation: ls-record-rainbow var(--ls-rainbow-duration, 3.6s) linear infinite; }

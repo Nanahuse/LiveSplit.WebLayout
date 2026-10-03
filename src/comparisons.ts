@@ -13,6 +13,8 @@ export class Comparisons {
   index = -1;
   phase = '';
   sumOfBest: number | null = null;
+  // null means the server explicitly reported no comparison; undefined means unknown.
+  finalComparisonDelta: number | null | undefined;
   private method = '';
   private selected = '';
   private commands: ReadCommand[] = [];
@@ -46,6 +48,10 @@ export class Comparisons {
       for (const key of this.rows.keys()) if (key >= index) this.rows.delete(key);
     }
     this.index = index; this.phase = phase; this.method = method; this.selected = selected;
+    const selectedIndex = this.sampledNames.indexOf('');
+    const finalDelta = selectedIndex < 0 ? '' : v[5 + selectedIndex * 2];
+    this.finalComparisonDelta = phase === 'Ended'
+      ? finalDelta === '-' ? null : seconds(finalDelta) ?? undefined : undefined;
     if (!['Running', 'Paused'].includes(phase) || index < 0) return;
     this.rows.set(index, new Map(this.sampledNames.map((name, i) => [name, {
       target: seconds(v[4 + i * 2]), previousDelta: index === 0 ? 0 : seconds(v[5 + i * 2]),
@@ -69,5 +75,5 @@ export class Comparisons {
     const visible = (!segment && delta > 0) || beyondBest || (comparison.previousDelta != null && delta > comparison.previousDelta);
     return visible ? this.delta(index, name, current, segment) : null;
   }
-  clear() { this.rows.clear(); this.sumOfBest = null; this.index = -1; this.phase = ''; this.commands = []; this.values = []; }
+  clear() { this.rows.clear(); this.sumOfBest = null; this.finalComparisonDelta = undefined; this.index = -1; this.phase = ''; this.commands = []; this.values = []; }
 }
