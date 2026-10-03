@@ -3,11 +3,13 @@ import { renderReadout } from './readout.ts';
 import { subscribe } from './session.ts';
 import type { Session } from './session.ts';
 import { metrics, metricTemplate } from './metrics.ts';
+import { comparisonNames } from './comparisons.ts';
+import { updateLiveSplits } from './split-view.ts';
 
 const templates: Record<string, string> = {
   'livesplit-timer': '<span class="ls-timer" role="timer" aria-live="off"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></span>',
   'livesplit-game': '<div class="ls-game" data-ls-field="game">—</div><div class="ls-category" data-ls-field="category">—</div>',
-  'livesplit-splits': '<table class="ls-splits" aria-label="Splits"><thead><tr><th scope="col">区間</th><th scope="col">比較差</th><th scope="col">累積タイム</th></tr></thead><tbody data-ls-field="splits"></tbody></table>',
+  'livesplit-splits': '<table class="ls-splits" aria-label="Splits"><thead><tr data-ls-field="split-head"></tr></thead><tbody data-ls-field="splits"></tbody></table>',
   'livesplit-status': '<span data-ls-field="status" role="status">接続中</span>',
   'livesplit-value': '<span data-ls-value>—</span>',
   ...Object.fromEntries(Object.entries(metrics).map(([name, metric]) => [name, metricTemplate(metric)])),
@@ -15,7 +17,7 @@ const templates: Record<string, string> = {
 
 // Light DOM allows ordinary CSS and user-supplied data-ls-field templates.
 class LiveSplitPart extends HTMLElement {
-  static observedAttributes = ['server', 'field', 'label', 'hide-label'];
+  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'live-delta'];
   private unsubscribe?: () => void;
   connectedCallback() {
     this.setAttribute('data-ls-part', '');
@@ -45,7 +47,7 @@ class LiveSplitPart extends HTMLElement {
     try {
       const server = this.getAttribute('server');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
-      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick));
+      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), this.localName === 'livesplit-splits' ? comparisonNames(this.getAttribute('comparisons')) : []);
     } catch {
       this.dataset.state = 'error';
       for (const element of this.querySelectorAll('[data-ls-field]')) element.textContent = '接続先エラー';
@@ -59,7 +61,7 @@ class LiveSplitPart extends HTMLElement {
     set('whole', session.time.whole); set('fraction', session.time.fraction);
     set('time', `${session.time.whole}${session.time.fraction}`);
     for (const cell of this.querySelectorAll('[data-live]')) cell.textContent = session.run.liveTime;
-    if (tick) return;
+    if (tick) { updateLiveSplits(session.run, this); return; }
     set('status', { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[session.status]);
     set('endpoint', session.endpoint);
     renderReadout(session.run, this);

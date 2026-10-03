@@ -4,6 +4,28 @@ import WebSocket from 'ws';
 import { TimerConnection, formatTime } from '../src/timer.ts';
 import type { ConnectionStatus, TimerSocket } from '../src/timer.ts';
 import { RunReadout } from '../src/readout.ts';
+import { Comparisons } from '../src/comparisons.ts';
+
+test('real LiveSplit: reads named comparisons without changing the selected comparison', { timeout: 15000 }, async () => {
+  const comparisons = new Comparisons();
+  comparisons.names = new Set(['Personal Best', 'Best Segments']); comparisons.begin();
+  const socket = new WebSocket(process.env.LIVESPLIT_URL ?? 'ws://localhost:16834/livesplit', { perMessageDeflate: true });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Comparison snapshot timed out')), 12000);
+      socket.on('error', error => { clearTimeout(timeout); reject(error); });
+      socket.on('open', () => socket.send(comparisons.next()!));
+      socket.on('message', value => {
+        comparisons.receive(String(value));
+        const command = comparisons.next();
+        if (command) socket.send(command);
+        else { clearTimeout(timeout); resolve(); }
+      });
+    });
+    assert.match(comparisons.phase, /^(NotRunning|Running|Paused|Ended)$/);
+    console.log(`Named comparison snapshot: ${comparisons.phase}, index ${comparisons.index}`);
+  } finally { socket.close(); }
+});
 
 // Opt-in: reads the real server without starting, pausing, or resetting a run.
 test('real LiveSplit: receives time samples and recovers from a dropped connection', { timeout: 15000 }, async () => {

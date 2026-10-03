@@ -37,9 +37,12 @@ test('parts share connections, render independently, and release sockets when re
       getdelta: '-00:00:01.25', getbestpossibletime: '00:05:45.1234567', getfinaltime: '00:06:00',
       getgamename: 'Game', getcategoryname: 'Any%', gettimingmethod: 'RealTime',
       getcomparisonname: 'Personal Best', getattemptcount: '42', getcompletedcount: '12', getsplitcount: '0',
+      'getcomparisonsplittime Personal Best': '00:02:00', 'getdelta Personal Best': '-00:00:01',
+      'getcomparisonsplittime Best Segments': '00:01:20', 'getdelta Best Segments': '00:00:10',
     };
     sockets[1].onopen?.();
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 100; i++) {
+      sockets[0].onmessage?.({ data: '00:01:23.45' });
       sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
       t.mock.timers.tick(33);
     }
@@ -59,6 +62,24 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(text('livesplit-comparison'), 'Personal Best');
     assert.equal(text('livesplit-timing-method'), 'Real Time');
     assert.equal(sockets.length, 2);
+    const splits = body.querySelector('livesplit-splits')!;
+    splits.setAttribute('comparisons', 'Personal Best|Best Segments');
+    for (let i = 0; i < 100; i++) {
+      sockets[0].onmessage?.({ data: '00:01:23.45' });
+      sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
+      t.mock.timers.tick(33);
+    }
+    assert.equal(splits.querySelectorAll('thead th').length, 6);
+    const delta = () => splits.querySelector('.active [data-column="delta"][data-comparison="Personal Best"]')?.textContent;
+    assert.equal(delta(), '—');
+    sockets[0].onmessage?.({ data: '00:01:31' });
+    assert.equal(delta(), '-0:29.00');
+    t.mock.timers.tick(33);
+    sockets[0].onmessage?.({ data: '00:01:32' });
+    assert.equal(delta(), '-0:28.00');
+    splits.setAttribute('live-delta', 'false');
+    assert.equal(delta(), '—');
+    assert.equal(sockets.length, 2);
     const best = body.querySelector('livesplit-best-possible-time')!;
     best.setAttribute('label', '<b>最速予測</b>');
     assert.equal(best.querySelector('.ls-label')?.textContent, '<b>最速予測</b>');
@@ -70,7 +91,8 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(sockets.length, 2); // label changes must not reset shared history
     responses.getbestpossibletime = '-'; responses.getcurrenttimerphase = 'Ended';
     responses.getdelta = '00:00:02';
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 100; i++) {
+      sockets[0].onmessage?.({ data: '00:01:23.45' });
       sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
       t.mock.timers.tick(33);
     }
@@ -86,3 +108,5 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(sockets.length, 2);
   } finally { body.innerHTML = ''; await dom.happyDOM.close(); }
 });
+
+

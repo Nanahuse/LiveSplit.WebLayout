@@ -1,6 +1,8 @@
 import { formatTime } from './timer.ts';
 import type { ReadCommand } from './timer.ts';
-import { SplitHistory, splitCommands, splitDelta } from './splits.ts';
+import { Comparisons } from './comparisons.ts';
+import { renderSplits } from './split-view.ts';
+import { SplitHistory, splitCommands } from './splits.ts';
 
 const commands: ReadCommand[] = [
   ...splitCommands, 'getdelta', 'getbestpossibletime', 'getfinaltime',
@@ -10,6 +12,8 @@ const commands: ReadCommand[] = [
 
 export class RunReadout {
   readonly history = new SplitHistory();
+  readonly comparisons = new Comparisons();
+  private readingComparisons = false;
   liveTime = '—';
   readonly values = new Map<ReadCommand, string>();
   readonly names = new Map<number, string>();
@@ -20,6 +24,12 @@ export class RunReadout {
   readonly unavailable = new Set<ReadCommand>();
 
   nextCommand(): ReadCommand {
+    const extra = this.comparisons.next();
+    if (extra) { this.readingComparisons = true; return extra; }
+    if (this.cursor >= commands.length) {
+      this.cursor = 0; this.comparisons.begin(); this.readingComparisons = true;
+      return this.comparisons.next()!;
+    }
     const count = this.count;
     if (this.requestName && count > 0) {
       this.requestName = false;
@@ -35,6 +45,7 @@ export class RunReadout {
   }
 
   receive(command: ReadCommand, value: string | null) {
+    if (this.readingComparisons) { this.readingComparisons = false; this.comparisons.receive(value); return; }
     this.history.receive(command, value);
     const text = value?.trim();
     if (value === null) {
@@ -62,7 +73,7 @@ export class RunReadout {
     return Number.isSafeInteger(count) && count >= 0 ? Math.min(count, 1000) : 0;
   }
 
-  clear() { this.history.clear(); this.liveTime = '—'; this.values.clear(); this.names.clear(); this.retryAfter.clear(); this.unavailable.clear(); this.cursor = this.nameCursor = 0; this.requestName = false; }
+  clear() { this.comparisons.clear(); this.readingComparisons = false; this.history.clear(); this.liveTime = '—'; this.values.clear(); this.names.clear(); this.retryAfter.clear(); this.unavailable.clear(); this.cursor = this.nameCursor = 0; this.requestName = false; }
 }
 
 export function displayTime(value?: string, delta = false): string {
@@ -112,36 +123,7 @@ export function renderReadout(run: RunReadout, root: ParentNode) {
   set('best-possible', displayTime(get('getbestpossibletime')));
   set('final-time', displayTime(get('getfinaltime')));
   set('final-label', phase === 'Ended' ? '完走タイム' : '比較の最終タイム');
-  const index = Number(get('getsplitindex') ?? -1);
   set('split-progress', summary.progress);
-  const list = root.querySelector<HTMLElement>('[data-ls-field="splits"]');
-  if (!list) return;
-  const history = run.history;
-  const length = Math.max(run.count, ...[...history.rows.keys()].map(i => i + 1), 0);
-  const signature = JSON.stringify([history.index, history.phase, length, [...run.names], [...history.rows]]);
-  if (list.dataset.signature === signature) return;
-  list.dataset.signature = signature;
-  const rows = Array.from({ length }, (_, i) => {
-    const data = history.rows.get(i);
-    const row = document.createElement('tr');
-    const active = i === history.index && (history.phase === 'Running' || history.phase === 'Paused');
-    row.className = active ? 'active' : '';
-    if (active) row.setAttribute('aria-current', 'step');
-    const name = document.createElement('th'); name.scope = 'row';
-    const number = document.createElement('span'); number.className = 'split-number'; number.textContent = `${String(i + 1).padStart(2, '0')}  `;
-    const label = document.createElement('span'); label.textContent = data?.name ?? run.names.get(i) ?? '未取得の区間';
-    name.append(number, label);
-    const delta = document.createElement('td'); const difference = data ? splitDelta(data) : undefined;
-    delta.textContent = difference ?? '—'; delta.dataset.sign = difference?.startsWith('-') ? 'ahead' : difference ? 'behind' : '';
-    const time = document.createElement('td');
-    time.textContent = active ? run.liveTime : displayTime(data?.time);
-    if (active) { time.dataset.live = ''; row.setAttribute('aria-label', '現在の区間'); }
-    row.append(name, delta, time);
-    return row;
-  });
-  if (!rows.length) {
-    const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 3;
-    cell.className = 'splits-empty'; cell.textContent = '計測開始後、取得した区間をここに表示します。'; row.append(cell); rows.push(row);
-  }
-  list.replaceChildren(...rows);
+  renderSplits(run, root);
 }
+

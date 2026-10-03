@@ -115,7 +115,27 @@ Shadow DOMを使わないため、通常のCSSセレクターですべて装飾�
 </livesplit-timer>
 ```
 
-Splits表を独自に組む場合は、`tbody data-ls-field="splits"` を設けてください。そのtbodyの行はパーツが管理します。行には `active`、差分セルには `data-sign="ahead|behind"` が付くのでCSSで装飾できます。
+Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列見出し用の `thead` 内に `tr data-ls-field="split-head"` を設けてください。その行と見出しはパーツが管理します。行には `active`、差分セルには `data-sign="ahead|behind"` が付くのでCSSで装飾できます。
+
+### Splitsの比較列とライブ差分
+
+`comparisons` に比較名を `|` 区切りで指定すると、それぞれの比較累積タイムと差分の列を追加します。LiveSplit内の比較名をそのまま指定してください。省略時はLiveSplitで選択中の比較です。比較の作成・編集はLiveSplit側で行います。
+
+```html
+<livesplit-splits comparisons="Personal Best|Best Segments|Average Segments"></livesplit-splits>
+```
+
+現在区間の差分は、Best Segmentsの到達ペースを超えるか、比較の区間ペース・累積タイムを超えると、タイマー応答ごとに更新します。それ以前は「—」、終了した区間は確定した差分になります。無効化するには `live-delta="false"` を指定します。
+
+標準WebSocketは各区間の `BestSegmentTime` を直接公開していないため、Best Segmentsの現在比較タイムと直近の確定差分から到達ペースを判定します。本体の [CheckLiveDelta](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Model/LiveSplitStateHelper.cs) にある個別Best Segmentの追加条件までは再現できません。特に区間スキップ・欠損値がある場合、本体と表示開始のタイミングが異なることがあります。比較値がない場合は推測せず「—」です。
+
+比較値は現在区間にいる間に取得・保存します。標準WSには任意の区間の比較タイムを読むコマンドがないため、未到達区間や接続前に通過した区間の比較タイムは「—」になります。列を途中追加した場合も取得以降の区間が対象です。比較を増やすほど初回取得・区間切り替え後の更新に時間がかかります。
+
+セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、ライブ差分セルには `data-live-delta` が付きます。列を装飾する例:
+
+```css
+livesplit-splits [data-column="comparison-time"] { opacity: .65; }
+```
 
 ## 接続先
 
@@ -151,3 +171,4 @@ npm run test:live
 実装は `src/components.ts`（パーツ）、`src/session.ts`（共有接続）、`src/parts.css`（既定CSS）、`src/readout.ts` / `src/splits.ts`（表示・履歴）、`src/timer.ts`（通信）です。配置例はルートの `index.html` から出力されます。
 
 仕様: [LiveSplit公式README](https://github.com/LiveSplit/LiveSplit#the-livesplit-server)。サードパーティーのJSON形式WebSocketプラグインは対象外です。
+

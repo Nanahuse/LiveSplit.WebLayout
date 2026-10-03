@@ -7,6 +7,7 @@ export class Session {
   status: ConnectionStatus = 'connecting';
   time: TimerDisplay = { whole: '—:—', fraction: '.—' };
   readonly listeners = new Set<Listener>();
+  readonly comparisonRequests = new Map<Listener, string[]>();
   private readonly timer: TimerConnection;
   private readonly details: TimerConnection;
   constructor(readonly endpoint: string) {
@@ -33,12 +34,16 @@ export class Session {
   private emit(tick: boolean) { for (const listener of this.listeners) listener(this, tick); }
 }
 const sessions = new Map<string, Session>();
-export function subscribe(endpoint: string, listener: Listener) {
+export function subscribe(endpoint: string, listener: Listener, comparisons: string[] = []) {
   let session = sessions.get(endpoint);
   if (!session) { session = new Session(endpoint); sessions.set(endpoint, session); }
+  session.comparisonRequests.set(listener, comparisons);
+  session.run.comparisons.names = new Set([...session.comparisonRequests.values()].flat());
   session.listeners.add(listener); listener(session, false); session.start();
   return () => {
     session.listeners.delete(listener);
+    session.comparisonRequests.delete(listener);
+    session.run.comparisons.names = new Set([...session.comparisonRequests.values()].flat());
     if (!session.listeners.size) { session.stop(); sessions.delete(endpoint); }
   };
 }

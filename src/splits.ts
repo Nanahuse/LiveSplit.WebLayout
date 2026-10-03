@@ -43,7 +43,7 @@ export class SplitHistory {
   clear() { this.rows.clear(); this.index = -1; this.phase = ''; this.position = 0; this.sample = []; }
 }
 
-function seconds(value: string): number | null {
+export function seconds(value: string): number | null {
   if (!formatTime(value)) return null;
   const match = /^(-)?(?:(\d+)\.)?(\d+):(\d{2}):(\d{2})(?:\.(\d+))?$/.exec(value.trim())!;
   return (match[1] ? -1 : 1) * (Number(match[2] ?? 0) * 86400 + Number(match[3]) * 3600 + Number(match[4]) * 60 + Number(match[5]) + Number(`0.${match[6] ?? 0}`));
@@ -53,7 +53,10 @@ export function splitDelta(row: SplitRow): string | undefined {
   if (!row.time || !row.target) return undefined;
   const actual = seconds(row.time), target = seconds(row.target);
   if (actual === null || target === null) return undefined;
-  const difference = actual - target;
+  return formatDelta(actual - target);
+}
+
+export function formatDelta(difference: number): string {
   const centiseconds = Math.round(Math.abs(difference) * 100);
   const hours = Math.floor(centiseconds / 360000);
   const minutes = Math.floor(centiseconds / 6000) % 60;

@@ -70,7 +70,11 @@ test('null timeouts clear stale values and back off unsupported commands', () =>
   run.receive('getgamename', null);
   assert.equal(run.values.has('getgamename'), false);
   assert.ok(run.unavailable.has('getgamename'));
-  for (let i = 0; i < 40; i++) assert.notEqual(run.nextCommand(), 'getgamename');
+  for (let i = 0; i < 40; i++) {
+    const command = run.nextCommand();
+    assert.notEqual(command, 'getgamename');
+    run.receive(command, '-');
+  }
   run.receive('getgamename', 'New Game');
   assert.equal(run.unavailable.has('getgamename'), false);
   run.receive('getdelta', '-');
