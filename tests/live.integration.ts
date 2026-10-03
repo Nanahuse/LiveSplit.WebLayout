@@ -74,6 +74,7 @@ test('real LiveSplit: receives time samples and recovers from a dropped connecti
 test('real LiveSplit: reads supplementary fields while tolerating unsupported commands', { timeout: 25000 }, async () => {
   const run = new RunReadout();
   const seen = new Set<string>();
+  const cycles: number[] = [];
   let finish!: () => void;
   let fail!: (error: Error) => void;
   const done = new Promise<void>((resolve, reject) => { finish = resolve; fail = reject; });
@@ -83,10 +84,12 @@ test('real LiveSplit: reads supplementary fields while tolerating unsupported co
     onTime() {}, onStatus() {}, timeout: 1000, retry: 250,
     readout: {
       nextCommand: () => run.nextCommand(),
+      nextDelay: () => run.nextDelay(),
       onResponse(command, value) {
         run.receive(command, value);
+        if (command === 'getbestpossibletime') cycles.push(Date.now());
         if (!command.startsWith('getsplitname ')) seen.add(command);
-        if (seen.size === 16) finish();
+        if (cycles.length >= 20 && ['getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount', 'getbestpossibletime', 'getfinaltime'].every(field => seen.has(field))) finish();
       },
     },
   });
@@ -95,5 +98,6 @@ test('real LiveSplit: reads supplementary fields while tolerating unsupported co
     assert.match(run.values.get('getcurrenttimerphase') ?? '', /^(NotRunning|Running|Paused|Ended)$/);
     assert.match(run.values.get('getsplitindex') ?? '', /^-?\d+$/);
     console.log(`Supplementary fields: ${run.values.size} values; ${run.unavailable.size} unanswered commands`);
+    console.log(`Fast read cycle average: ${Math.round((cycles.at(-1)! - cycles[0]) / (cycles.length - 1))}ms (${cycles.length} cycles)`);
   } finally { clearTimeout(deadline); client.stop(); }
 });

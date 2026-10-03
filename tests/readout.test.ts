@@ -51,10 +51,13 @@ test('handles absent times and signed deltas without displaying false zeroes', (
 test('refreshes indexed split names and removes rows after the run shrinks', () => {
   const run = new RunReadout();
   run.receive('getsplitcount', '2');
-  assert.equal(run.nextCommand(), 'getcurrenttimerphase');
-  assert.equal(run.nextCommand(), 'getsplitname 0');
-  run.nextCommand();
-  assert.equal(run.nextCommand(), 'getsplitname 1');
+  const seen = new Set<string>();
+  for (let i = 0; i < 300; i++) {
+    const command = run.nextCommand(); seen.add(command);
+    run.receive(command, command === 'getsplitcount' ? '2' : '-');
+  }
+  assert.ok(seen.has('getsplitname 0'));
+  assert.ok(seen.has('getsplitname 1'));
   run.receive('getsplitname 0', 'First');
   run.receive('getsplitname 1', 'Last');
   run.receive('getsplitcount', '1');
@@ -62,6 +65,52 @@ test('refreshes indexed split names and removes rows after the run shrinks', () 
   run.clear();
   assert.equal(run.count, 0);
   assert.equal(run.names.size, 0);
+});
+
+test('fast snapshots run every 100ms while static metadata has independent deadlines', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: 10000 });
+  const run = new RunReadout();
+  run.comparisons.names = new Set(['Personal Best', 'Best Segments']);
+  run.receive('getsplitcount', '1000');
+  const reads = new Map<string, number[]>();
+  for (let cycle = 0; cycle < 70; cycle++) {
+    let requests = 0;
+    do {
+      const command = run.nextCommand();
+      reads.set(command, [...reads.get(command) ?? [], Date.now()]);
+      run.receive(command, command === 'getsplitcount' ? '1000' : '-');
+      requests++;
+    } while (run.nextDelay() === 0);
+    assert.ok(requests <= 26, 'a large split list must not delay the next snapshot');
+    t.mock.timers.tick(run.nextDelay());
+  }
+  const phases = [...new Set(reads.get('getcurrenttimerphase'))];
+  assert.equal(phases.length, 70);
+  for (let i = 1; i < phases.length; i++) assert.equal(phases[i] - phases[i - 1], 100);
+  assert.equal(reads.get('getgamename')?.length, 2);
+  assert.ok(reads.has('getsplitname 10'));
+});
+
+test('metadata refreshes periodically and reconnect clears all deadlines', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: 10000 });
+  const run = new RunReadout();
+  const reads = new Map<string, number[]>();
+  for (let cycle = 0; cycle < 120; cycle++) {
+    do {
+      const command = run.nextCommand();
+      reads.set(command, [...reads.get(command) ?? [], Date.now()]);
+      run.receive(command, '-');
+    } while (run.nextDelay() === 0);
+    t.mock.timers.tick(run.nextDelay());
+  }
+  const games = reads.get('getgamename')!;
+  assert.equal(games.length, 3);
+  assert.ok(games[1] - games[0] >= 5000);
+  assert.ok(reads.get('getattemptcount')!.length >= 10);
+  run.clear();
+  const commands = [];
+  do { const command = run.nextCommand(); commands.push(command); run.receive(command, '-'); } while (run.nextDelay() === 0);
+  assert.ok(commands.includes('getgamename'));
 });
 
 test('null timeouts clear stale values and back off unsupported commands', () => {

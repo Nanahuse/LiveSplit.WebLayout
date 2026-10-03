@@ -13,6 +13,7 @@ interface ConnectionOptions {
   readout?: {
     nextCommand: () => ReadCommand;
     onResponse: (command: ReadCommand, value: string | null) => void;
+    nextDelay?: () => number;
   };
 }
 
@@ -95,7 +96,9 @@ export class TimerConnection {
         this.onTime(time);
       }
       this.onStatus('connected');
-      this.poll = setTimeout(() => this.request(socket), this.interval);
+      const delay = this.readout?.nextDelay?.() ?? this.interval;
+      if (delay <= 0) this.request(socket);
+      else this.poll = setTimeout(() => this.request(socket), delay);
     };
     socket.onerror = socket.onclose = () => this.fail(socket);
   }

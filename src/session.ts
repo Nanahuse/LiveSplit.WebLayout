@@ -13,7 +13,7 @@ export class Session {
   constructor(readonly endpoint: string) {
     this.details = new TimerConnection(endpoint, {
       onTime() {}, onStatus() {}, interval: 33, timeout: 1000, retry: 250,
-      readout: { nextCommand: () => this.run.nextCommand(), onResponse: (command, value) => {
+      readout: { nextCommand: () => this.run.nextCommand(), nextDelay: () => this.run.nextDelay(), onResponse: (command, value) => {
         this.run.receive(command, value); this.emit(false);
       } },
     });

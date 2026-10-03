@@ -4,7 +4,7 @@ import { Window } from 'happy-dom';
 import { metrics } from '../src/metrics.ts';
 
 test('parts share connections, render independently, and release sockets when removed', async t => {
-  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
   const dom = new Window({ url: 'http://localhost/' });
   const sockets: FakeSocket[] = [];
   class FakeSocket {
@@ -41,7 +41,7 @@ test('parts share connections, render independently, and release sockets when re
       'getcomparisonsplittime Best Segments': '00:01:20', 'getdelta Best Segments': '00:00:10',
     };
     sockets[1].onopen?.();
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 400; i++) {
       sockets[0].onmessage?.({ data: '00:01:23.45' });
       sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
       t.mock.timers.tick(33);
@@ -64,7 +64,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(sockets.length, 2);
     const splits = body.querySelector('livesplit-splits')!;
     splits.setAttribute('comparisons', 'Personal Best|Best Segments');
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 400; i++) {
       sockets[0].onmessage?.({ data: '00:01:23.45' });
       sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
       t.mock.timers.tick(33);
@@ -91,7 +91,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(sockets.length, 2); // label changes must not reset shared history
     responses.getbestpossibletime = '-'; responses.getcurrenttimerphase = 'Ended';
     responses.getdelta = '00:00:02';
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 400; i++) {
       sockets[0].onmessage?.({ data: '00:01:23.45' });
       sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
       t.mock.timers.tick(33);
@@ -108,5 +108,3 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(sockets.length, 2);
   } finally { body.innerHTML = ''; await dom.happyDOM.close(); }
 });
-
-

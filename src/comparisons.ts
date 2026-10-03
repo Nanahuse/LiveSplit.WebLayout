@@ -23,6 +23,7 @@ export class Comparisons {
       ...this.sampledNames.flatMap<ReadCommand>(name => [name ? `getcomparisonsplittime ${name}` : 'getcomparisonsplittime', name ? `getdelta ${name}` : 'getdelta']),
       'getcomparisonname', 'gettimingmethod', 'getsplitindex', 'getcurrenttimerphase'];
     this.values = [];
+    return this.commands;
   }
   next(): ReadCommand | undefined { return this.commands[this.values.length]; }
   receive(value: string | null) {

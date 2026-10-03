@@ -4,11 +4,11 @@ import { Comparisons } from './comparisons.ts';
 import { renderSplits } from './split-view.ts';
 import { SplitHistory, splitCommands } from './splits.ts';
 
-const commands: ReadCommand[] = [
+const fastCommands: ReadCommand[] = [
   ...splitCommands, 'getdelta', 'getbestpossibletime', 'getfinaltime',
-  'getgamename', 'getcategoryname', 'gettimingmethod', 'getcomparisonname',
-  'getattemptcount', 'getcompletedcount', 'getsplitcount',
+  'gettimingmethod', 'getcomparisonname',
 ];
+const slowCommands: ReadCommand[] = ['getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount'];
 
 export class RunReadout {
   readonly history = new SplitHistory();
@@ -17,32 +17,40 @@ export class RunReadout {
   liveTime = '—';
   readonly values = new Map<ReadCommand, string>();
   readonly names = new Map<number, string>();
-  private cursor = 0;
-  private nameCursor = 0;
-  private requestName = false;
+  private queue: { command: ReadCommand; comparison: boolean }[] = [];
+  private nextPoll = 0;
+  private slowCursor = 0;
+  private readonly refreshAt = new Map<ReadCommand, number>();
   private readonly retryAfter = new Map<ReadCommand, number>();
   readonly unavailable = new Set<ReadCommand>();
 
   nextCommand(): ReadCommand {
-    const extra = this.comparisons.next();
-    if (extra) { this.readingComparisons = true; return extra; }
-    if (this.cursor >= commands.length) {
-      this.cursor = 0; this.comparisons.begin(); this.readingComparisons = true;
-      return this.comparisons.next()!;
+    if (!this.queue.length) {
+      const now = Date.now();
+      this.nextPoll = now + 100;
+      this.queue = fastCommands
+        .filter(command => splitCommands.includes(command) || (this.retryAfter.get(command) ?? 0) <= now)
+        .map(command => ({ command, comparison: false }));
+      this.queue.push(...this.comparisons.begin().map(command => ({ command, comparison: true })));
+      // At most one low-priority read per cycle: long split lists never block
+      // the next state snapshot. Each field has its own refresh deadline.
+      const names = Array.from({ length: this.count }, (_, i): ReadCommand => `getsplitname ${(this.slowCursor + i) % this.count}`);
+      const slow: ReadCommand[] = [...slowCommands, ...names];
+      for (let i = 0; i < slow.length; i++) {
+        const command = slow[i];
+        if (Math.max(this.refreshAt.get(command) ?? 0, this.retryAfter.get(command) ?? 0) > now) continue;
+        this.refreshAt.set(command, now + (command === 'getattemptcount' || command === 'getcompletedcount' ? 1000 : 5000));
+        this.queue.push({ command, comparison: false });
+        if (command.startsWith('getsplitname ')) this.slowCursor = Number(command.slice('getsplitname '.length)) + 1;
+        break;
+      }
     }
-    const count = this.count;
-    if (this.requestName && count > 0) {
-      this.requestName = false;
-      const index = this.nameCursor++ % count;
-      return `getsplitname ${index}`;
-    }
-    this.requestName = true;
-    for (let i = 0; i < commands.length; i++) {
-      const command = commands[this.cursor++ % commands.length];
-      if (splitCommands.includes(command) || (this.retryAfter.get(command) ?? 0) <= Date.now()) return command;
-    }
-    return 'getcurrenttimerphase';
+    const request = this.queue.shift()!;
+    this.readingComparisons = request.comparison;
+    return request.command;
   }
+
+  nextDelay(): number { return this.queue.length ? 0 : Math.max(0, this.nextPoll - Date.now()); }
 
   receive(command: ReadCommand, value: string | null) {
     if (this.readingComparisons) { this.readingComparisons = false; this.comparisons.receive(value); return; }
@@ -73,7 +81,7 @@ export class RunReadout {
     return Number.isSafeInteger(count) && count >= 0 ? Math.min(count, 1000) : 0;
   }
 
-  clear() { this.comparisons.clear(); this.readingComparisons = false; this.history.clear(); this.liveTime = '—'; this.values.clear(); this.names.clear(); this.retryAfter.clear(); this.unavailable.clear(); this.cursor = this.nameCursor = 0; this.requestName = false; }
+  clear() { this.comparisons.clear(); this.readingComparisons = false; this.history.clear(); this.liveTime = '—'; this.values.clear(); this.names.clear(); this.retryAfter.clear(); this.unavailable.clear(); this.queue = []; this.nextPoll = this.slowCursor = 0; this.refreshAt.clear(); }
 }
 
 export function displayTime(value?: string, delta = false): string {
