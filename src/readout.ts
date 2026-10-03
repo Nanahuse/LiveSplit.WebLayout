@@ -126,6 +126,10 @@ export function renderReadout(run: RunReadout, root: ParentNode) {
   const summary = splitSummary(run);
   const phases: Record<string, string> = { NotRunning: '待機中', Running: '計測中', Paused: '一時停止', Ended: '完走' };
   set('hotkey-status', ({ true: '有効', false: '無効' })[get('globalhotkeysenabled')?.toLowerCase() ?? ''] ?? '—');
+  for (const element of root.querySelectorAll<HTMLElement>('.ls-hotkey-bar')) {
+    const state = get('globalhotkeysenabled')?.toLowerCase();
+    element.dataset.hotkeys = state === 'true' ? 'on' : state === 'false' ? 'off' : 'unknown';
+  }
   set('phase', phases[phase ?? ''] ?? '—');
   set('game', get('getgamename') ?? 'ゲーム情報未取得');
   set('category', get('getcategoryname') ?? 'カテゴリ情報未取得');

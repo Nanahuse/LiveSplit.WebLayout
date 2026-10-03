@@ -232,8 +232,8 @@ Sum of Bestは本体が生成したBest Segments比較を取得します。本�
 
 | パーツ | 内容・設定 |
 |---|---|
-| `livesplit-detailed-timer` | 全体タイマー・現在区間名・区間タイマー・2つの比較区間タイム。`comparison1` / `comparison2`で比較名を指定。既定はPersonal Best / Best Segments。`Current Comparison`も使用可能 |
-| `livesplit-hotkey-indicator` | グローバルホットキーの有効 / 無効。`globalhotkeysenabled`を約1秒間隔で取得。切り替え操作は行わない |
+| `livesplit-detailed-timer` | 全体タイマー・現在区間名・区間タイマー・2つの比較区間タイム。`comparison1` / `comparison2`で比較名を指定。既定はCurrent Comparison / Best Segments。`Current Comparison`も使用可能 |
+| `livesplit-hotkey-indicator` | グローバルホットキーの状態を色付きの線で表示（有効は緑、無効は赤）。`show-text`で従来の文字表示も併用可能。`globalhotkeysenabled`を約1秒間隔で取得。切り替え操作は行わない |
 | `livesplit-text` | `left` / `right`に任意のテキスト。`left-field` / `right-field`には上記field名を指定でき、固定テキストより優先 |
 
 固定Textは通信不要で、`data-state="static"`になります。Textの内容はHTMLとして解釈しません。Hotkey Indicatorは`field="hotkey-status"`でも使用可能です。
@@ -300,3 +300,26 @@ npm run test:live
 
 仕様: [LiveSplit公式README](https://github.com/LiveSplit/LiveSplit#the-livesplit-server)。サードパーティーのJSON形式WebSocketプラグインは対象外です。
 
+
+### 公式設定と表示の対応（Detailed Timer / Text / Hotkey Indicator）
+
+公式ソースの [Detailed Timer設定](https://github.com/LiveSplit/LiveSplit.DetailedTimer/blob/master/src/LiveSplit.DetailedTimer/UI/Components/DetailedTimerSettings.cs)、[Text](https://github.com/LiveSplit/LiveSplit.Text/blob/master/src/LiveSplit.Text/UI/Components/TextComponent.cs)、[Hotkey Indicator](https://github.com/LiveSplit/LiveSplit.HotkeyIndicator/blob/master/src/LiveSplit.HotkeyIndicator/HotkeyIndicator.cs)と照合しています。`settings`はJSONで指定します。以下にない設定は無視せず設定エラーにします。本体のXMLをそのまま読み込む機能ではありません。
+
+| パーツ | 対応する設定・表示 |
+|---|---|
+| Detailed Timer | `Comparison` / `Comparison2`（属性comparison1/2が優先）、`HideComparison`（比較2のみ非表示）、`ShowSplitName`（既定false） |
+| Detailed Timerの時計 | `DigitsFormat` / `SegmentDigitsFormat`: `1`、`1:23`、`1:23:45`で最低表示桁数を指定。`Accuracy` / `SegmentAccuracy`: 空文字、`.2`、`.23`で秒・1/10秒・1/100秒を指定 |
+| Detailed Timerの比較値 | `SegmentTimesAccuracy`: Seconds / Tenths / Hundredths |
+| Detailed Timerの比率 | `SegmentTimerSizeRatio`（既定40%）、`DecimalsSize` / `SegmentTimerDecimalsSize`（既定35%）。全体・区間タイマーの小数を別々に装飾可能 |
+| Text | `Text1` / `Text2`、`CustomVariable`（Text2を変数名として取得）、`Display2Rows`。属性left/right/variable指定が優先。片側だけなら中央寄せ |
+| Hotkey Indicator | `IndicatorHeight` / `IndicatorWidth`（既定3px）、`HotkeysOnColor` / `HotkeysOffColor`（CSS色文字列）。通常は水平線、`orientation="vertical"`なら縦線。未知・切断中は灰色 |
+
+```html
+<livesplit-detailed-timer settings='{"ShowSplitName":true,"HideComparison":true,"SegmentAccuracy":".2","DecimalsSize":50}'></livesplit-detailed-timer>
+<livesplit-text settings='{"Text1":"Deaths","Text2":"Death Count","CustomVariable":true,"Display2Rows":true}'></livesplit-text>
+<livesplit-hotkey-indicator settings='{"IndicatorHeight":5,"HotkeysOnColor":"lime","HotkeysOffColor":"red"}'></livesplit-hotkey-indicator>
+```
+
+Textの左右の色とフォントは`--ls-text-left-color` / `--ls-text-right-color` / `--ls-text-left-font` / `--ls-text-right-font`で指定できます。背景・グラデーション・影・配置は通常のCSSで指定します。Detailed Timerの区間名は`.ls-segment-name`、比較名は`dt`、比較値は`dd`で独立に装飾できます。
+
+区間アイコン・選択中と異なる計測方法の区間時計・本体固有のタイマー状態色判定は未対応です。これらの完全な機能等価は保証しません。時計の取得精度は1/100秒のため、より細かい精度指定は受け付けません。

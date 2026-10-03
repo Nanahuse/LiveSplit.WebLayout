@@ -39,6 +39,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(body.querySelectorAll('[id]').length, 0);
     for (const tag of Object.keys(metrics)) body.appendChild(dom.document.createElement(tag));
     for (const tag of ['livesplit-detailed-timer', 'livesplit-text']) body.appendChild(dom.document.createElement(tag));
+    body.querySelector('livesplit-detailed-timer')!.setAttribute('comparison1', 'Personal Best');
     body.querySelector('livesplit-text')!.setAttribute('right-field', 'time');
     const customText = dom.document.createElement('livesplit-text');
     customText.setAttribute('right-variable', 'My Counter'); body.appendChild(customText);
@@ -83,10 +84,11 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(text('livesplit-real-time'), '1:23.45');
     assert.equal(text('livesplit-game-time'), '1:20.25');
     assert.equal(text('livesplit-hotkey-indicator'), '有効');
+    assert.equal(body.querySelector('.ls-hotkey-bar')?.getAttribute('data-hotkeys'), 'on');
     assert.equal(customText.querySelector('[data-ls-variable]')?.textContent, '<b>42</b>');
     assert.equal(customText.querySelector('b'), null);
     assert.equal(body.querySelector('livesplit-text [data-text-side="right"]')?.textContent, '1:23.45');
-    assert.equal(body.querySelector('livesplit-detailed-timer .ls-segment-time')?.textContent, '0:24.45');
+    assert.equal(body.querySelector('livesplit-detailed-timer .ls-segment-time')?.textContent, '24.45');
     assert.equal(body.querySelector('[data-comparison-value="1"]')?.textContent, '1:00.00');
     assert.equal(body.querySelector('[data-comparison-value="2"]')?.textContent, '0:31.00');
     assert.equal(sockets.length, 2);
@@ -142,12 +144,14 @@ test('parts share connections, render independently, and release sockets when re
     responses.getsplitindex = '2'; responses.getlastsplittime = '00:01:32';
     responses['getfinaltime Best Segments'] = '00:01:32';
     responses.getdelta = '00:00:02';
+    responses.globalhotkeysenabled = 'False';
     for (let i = 0; i < 400; i++) {
       sockets[0].onmessage?.({ data: '00:01:23.45' });
       sockets[1].onmessage?.({ data: responses[sockets[1].command] ?? '-' });
       t.mock.timers.tick(33);
     }
     assert.equal(text('livesplit-best-possible-time'), '—');
+    assert.equal(body.querySelector('.ls-hotkey-bar')?.getAttribute('data-hotkeys'), 'off');
     assert.equal(text('livesplit-sum-of-best'), '4:30.00');
     assert.equal(text('livesplit-segment-timer'), '0:33.00');
     assert.equal(text('livesplit-previous-segment'), '0:33.00');
