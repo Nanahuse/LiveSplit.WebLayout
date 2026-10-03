@@ -5,7 +5,13 @@ import { nativeSettings } from './split-settings.ts';
 
 export const columnTypes = ['SplitTime', 'SegmentTime', 'Delta', 'SegmentDelta', 'DeltaorSplitTime', 'SegmentDeltaorSegmentTime', 'ComparisonTime', 'LiveTime'] as const;
 export type ColumnType = typeof columnTypes[number];
-export interface Column { name: string; type: ColumnType; comparison: string; timingMethod?: string }
+export interface Column { name: string; type: ColumnType; comparison: string; timingMethod?: string; width?: string }
+function columnWidth(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return `${value}px`;
+  if (typeof value === 'string' && /^(?:auto|(?:\d+(?:\.\d+)?|\.\d+)(?:px|em|rem|ch|%))$/.test(value)) return value;
+  throw new Error('Column Width must be a nonnegative number (px), CSS length (px/em/rem/ch/%), or auto');
+}
 export function columnsFor(root: Element): Column[] {
   const settings = nativeSettings(root);
   const json = root.getAttribute('columns') ?? (settings.Columns === undefined ? null : JSON.stringify(settings.Columns));
@@ -21,7 +27,8 @@ export function columnsFor(root: Element): Column[] {
         (c.comparison !== undefined && (typeof c.comparison !== 'string' || /[\r\n\0]/.test(c.comparison)))) throw new Error('Invalid column');
       if (!['Current Timing Method', 'Real Time', 'Game Time'].includes(c.timingMethod!)) throw new Error('Invalid Timing Method');
       if (['SegmentTime', 'SegmentDelta', 'SegmentDeltaorSegmentTime'].includes(c.type) && c.comparison === 'Best Split Times') c.comparison = '';
-      return { name: c.name ?? c.type, type: c.type, comparison: !c.comparison || c.comparison === 'Current Comparison' ? '' : c.comparison, timingMethod: c.timingMethod };
+      const width = columnWidth(raw.Width ?? raw.width);
+      return { name: c.name ?? c.type, type: c.type, comparison: !c.comparison || c.comparison === 'Current Comparison' ? '' : c.comparison, timingMethod: c.timingMethod, ...(width === undefined ? {} : { width }) };
     });
   }
   if (root.getAttribute('comparisons') === null) return [

@@ -5,6 +5,14 @@ import { columnsFor, columnValue, visibleSplits } from '../src/columns.ts';
 import type { ColumnType } from '../src/columns.ts';
 
 const element = (attrs: Record<string, string>) => ({ getAttribute: (name: string) => attrs[name] ?? null }) as Element;
+test('column widths accept explicit units and reject invalid dimensions', () => {
+  const widths = [100, '7ch', '25%', 'auto'];
+  const root = element({ columns: JSON.stringify(widths.map(Width => ({ Type: 'Split Time', Width }))) });
+  assert.deepEqual(columnsFor(root).map(c => c.width), ['100px', '7ch', '25%', 'auto']);
+  for (const Width of [-1, 'wide', '20px; color:red']) {
+    assert.throws(() => columnsFor(element({ columns: JSON.stringify([{ Type: 'Delta', Width }]) })), /Width/);
+  }
+});
 function fixture() {
   const run = new RunReadout();
   run.history.index = 1; run.history.phase = 'Running';

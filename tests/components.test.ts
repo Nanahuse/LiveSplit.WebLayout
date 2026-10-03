@@ -120,14 +120,19 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(delta(), '-28.0');
     assert.equal(bestDelta(), '+2.0');
     splits.setAttribute('columns', JSON.stringify([
-      { type: 'SegmentDelta', comparison: 'Best Segments', name: '<Best>' },
+      { type: 'SegmentDelta', comparison: 'Best Segments', name: '<Best>', width: '7ch' },
       { type: 'DeltaorSplitTime', comparison: 'Personal Best', name: 'PB' },
     ]));
     assert.equal(splits.querySelectorAll('thead th').length, 3);
     assert.equal(splits.querySelectorAll('thead th')[1].textContent, '<Best>');
     assert.equal(splits.querySelector('best'), null);
+    assert.equal(splits.querySelectorAll('colgroup col').length, 3);
+    assert.equal(splits.querySelectorAll('colgroup col')[1].getAttribute('style'), 'width: 7ch;');
+    assert.equal(splits.querySelector('[data-column-index="0"]')?.getAttribute('style'), '--ls-cell-width: 7ch;');
     assert.equal(bestDelta(), '+2.0');
     splits.removeAttribute('columns');
+    assert.equal(splits.querySelectorAll('colgroup col').length, 6);
+    assert.ok(!splits.querySelector('[data-column-index="0"]')?.hasAttribute('style'));
     splits.setAttribute('live-delta', 'false');
     assert.equal(delta(), '');
     assert.equal(sockets.length, 2);

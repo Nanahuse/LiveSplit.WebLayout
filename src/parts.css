@@ -8,8 +8,10 @@ livesplit-timer .ls-fraction { font-size: .52em; }
 livesplit-timer:not([data-state="connected"]) .ls-timer { color: var(--ls-muted, #82919f); }
 livesplit-game .ls-game { font-size: 1.5em; font-weight: 700; }
 livesplit-game .ls-category { opacity: .7; }
-livesplit-splits .ls-splits { width: 100%; border-collapse: collapse; }
-livesplit-splits th, livesplit-splits td { padding: .65em; border-bottom: 1px solid var(--ls-border, #ffffff20); text-align: right; }
+livesplit-splits { width: var(--ls-splits-width, 100%); max-width: 100%; max-height: var(--ls-splits-max-height, none); overflow: auto; box-sizing: border-box; border: var(--ls-frame-width, 0px) solid var(--ls-border, #ffffff20); border-radius: var(--ls-frame-radius, 0px); }
+livesplit-splits .ls-splits { width: 100%; min-width: var(--ls-table-min-width, 0px); table-layout: var(--ls-table-layout, auto); border-collapse: collapse; }
+livesplit-splits th, livesplit-splits td { box-sizing: border-box; padding: var(--ls-cell-padding-y, .65em) var(--ls-cell-padding-x, .65em); border-bottom: var(--ls-line-width, 1px) solid var(--ls-border, #ffffff20); text-align: right; overflow: hidden; text-overflow: ellipsis; }
+livesplit-splits tbody tr { height: var(--ls-row-height, auto); }
 livesplit-splits th:first-child { text-align: left; font-weight: 500; overflow-wrap: anywhere; }
 livesplit-splits td { font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
 livesplit-splits .active { background: var(--ls-active-background, #234238); color: var(--ls-accent, #67e8b0); }
@@ -19,11 +21,12 @@ livesplit-splits .splits-empty { white-space: normal; text-align: center; opacit
 [data-ls-part] [data-sign="behind"] { color: var(--ls-behind, #efad9d); }
 livesplit-splits [hidden] { display: none; }
 livesplit-splits[data-separators="false"] td, livesplit-splits[data-separators="false"] th { border-bottom: 0; }
-livesplit-splits .last-split { border-top: 2px solid var(--ls-border, #ffffff20); }
+livesplit-splits .last-split { border-top: var(--ls-last-line-width, 2px) solid var(--ls-border, #ffffff20); }
 livesplit-splits .split-blank { height: var(--ls-blank-height, 2.6em); }
 livesplit-splits[data-two-rows="true"] tbody tr { display: flex; flex-wrap: wrap; }
 livesplit-splits[data-two-rows="true"] tbody th { flex: 0 0 100%; box-sizing: border-box; }
-livesplit-splits[data-two-rows="true"] tbody td { flex: 1; }
+livesplit-splits[data-two-rows="true"] tbody td { flex: 1 1 var(--ls-cell-width, var(--ls-column-width, 0%)); }
+livesplit-splits[data-two-rows="true"] tbody td[style] { flex: 0 0 var(--ls-cell-width); }
 /* Layout parts stay in light DOM so users can replace these styles. */
 livesplit-detailed-timer .ls-timer { font-size: var(--ls-timer-size, 5rem); color: var(--ls-accent, #67e8b0); }
 livesplit-detailed-timer .ls-timer, livesplit-detailed-timer .ls-segment-time, livesplit-detailed-timer dd { font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; }

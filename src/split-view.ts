@@ -34,6 +34,16 @@ export function renderSplits(run: RunReadout, root: ParentNode) {
     [...run.comparisons.rows].map(([i, values]) => [i, [...values]])]);
   if (list.dataset.signature === signature) { updateLiveSplits(run, root); return; }
   list.dataset.signature = signature;
+  const table = list.closest('table');
+  if (table) {
+    let group = table.querySelector('colgroup[data-ls-widths]');
+    if (!group) { group = document.createElement('colgroup'); group.setAttribute('data-ls-widths', ''); table.insertBefore(group, table.querySelector('thead, tbody, tfoot')); }
+    group.replaceChildren(...[undefined, ...columns].map((column, index) => {
+      const col = document.createElement('col');
+      col.style.width = index === 0 ? 'var(--ls-name-width, auto)' : column?.width ?? 'var(--ls-column-width, auto)';
+      return col;
+    }));
+  }
   const head = root.querySelector('[data-ls-field="split-head"]');
   if (head) {
     (head as HTMLElement).hidden = !settings.ShowColumnLabels;
@@ -53,6 +63,8 @@ export function renderSplits(run: RunReadout, root: ParentNode) {
     name.append(label); row.append(name);
     columns.forEach((column, columnIndex) => {
       const cell = document.createElement('td'); cell.dataset.comparison = column.comparison;
+      cell.dataset.columnIndex = String(columnIndex);
+      if (column.width) cell.style.setProperty('--ls-cell-width', column.width);
       cell.dataset.column = column.type === 'ComparisonTime' ? 'comparison-time' : column.type === 'LiveTime' ? 'time' : column.type.includes('Delta') ? 'delta' : 'time';
       cell.dataset.columnType = column.type;
       if (active) cell.dataset.liveColumn = String(columnIndex);
