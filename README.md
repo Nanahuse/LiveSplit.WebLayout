@@ -401,4 +401,29 @@ npm run test:live
 
 Textの左右の色とフォントは`--ls-text-left-color` / `--ls-text-right-color` / `--ls-text-left-font` / `--ls-text-right-font`で指定できます。背景・グラデーション・影・配置は通常のCSSで指定します。Detailed Timerの区間名は`.ls-segment-name`、比較名は`dt`、比較値は`dd`で独立に装飾できます。
 
-区間アイコン・選択中と異なる計測方法の区間時計・本体固有のタイマー状態色判定は未対応です。これらの完全な機能等価は保証しません。時計の取得精度は1/100秒のため、より細かい精度指定は受け付けません。
+区間アイコン・選択中と異なる計測方法の区間時計・本体固有の先行／遅延と回復／悪化の全状態色判定は未対応です。これらの完全な機能等価は保証しません。時計の取得精度は1/100秒のため、より細かい精度指定は受け付けません。
+
+### PB・Best Segmentの色／レインボー
+
+Timer、Detailed Timer、区間タイマー、直前区間タイム、Splitsの確定した数値セルに記録更新の色を適用できます。`pb-effect` / `bs-effect`をそれぞれ`color`（既定）、`rainbow`、`none`から選択します。判定値はLiveSplitから取得し、表示パーツごとに効果を指定できます。
+
+```html
+<livesplit-timer pb-effect="rainbow" bs-effect="none"></livesplit-timer>
+<livesplit-detailed-timer pb-effect="rainbow" bs-effect="color"
+  style="--ls-bs-color: #ffd700; --ls-rainbow-duration: 3.6s"></livesplit-detailed-timer>
+<livesplit-previous-segment bs-effect="rainbow"></livesplit-previous-segment>
+<livesplit-splits bs-effect="rainbow"></livesplit-splits>
+```
+
+指定色は`--ls-pb-color`（既定青 `#16a6ff`）・`--ls-bs-color`（既定金 `#ffd700`）、レインボーの周期は`--ls-rainbow-duration`（既定3.6s）です。色相を一巡させる表現は公式の[GetBestSegmentColor](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Model/LiveSplitStateHelper.cs)を参考に、CSSで滑らかに変化させています。OSで動きを減らす設定が有効な場合は指定色に固定します。
+
+| 対象 | 記録色のタイミング |
+|---|---|
+| 全体タイマー（Detailed Timer内も含む） | 完走時にPersonal Bestより速ければPB色を維持。BS達成直後は2秒間強調。両方成立した場合はPBを優先 |
+| 現在区間タイマー | BS達成後の2秒間強調。これは直前区間の達成通知で、新しい区間の記録判定ではない。完走時の最終区間がBSなら維持 |
+| 直前区間タイム | 直前の確定区間がBSなら次の区間確定まで維持 |
+| Splits | BSを達成した完了行の数値セルを強調 |
+
+PBは完走前に保存したPersonal Best比較の最終区間累積値より実測が速い場合、BSは保存したBest Segments比較に対する**区間差分が負**の場合に判定します。同タイムは記録更新にしません。BSは公式`CheckBestSegment`の条件の一つと同じです。ただし標準WSでは個別BestSegmentTimeを取得できないため、公式の「個別Best Segmentより速い」「まだ記録がない」条件は判定できません。途中接続・初回記録・比較値欠損では記録色を付けない場合があります。
+
+公式Timerの完走色は選択中の比較との比較ですが、このWeb版のPB色はユーザーが選んでいる比較にかかわらず**Personal Best**を対象にします。PBのレインボーとBS直後のタイマー強調はこのWeb版の拡張です。リセット・切断・不整合な取得状態では効果を解除します。`data-record="pb|bs"`と`data-record-effect`で独自のCSS効果にも差し替えられます。

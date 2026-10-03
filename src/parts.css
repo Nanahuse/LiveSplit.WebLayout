@@ -56,3 +56,19 @@ livesplit-hotkey-indicator .ls-hotkey-bar[data-hotkeys="off"] { background: var(
 livesplit-hotkey-indicator[orientation="vertical"] .ls-hotkey-bar { width: var(--ls-hotkey-width, var(--ls-setting-hotkey-width, 3px)); height: 100%; min-height: 1em; }
 livesplit-hotkey-indicator:not([show-text]) > .ls-label,
 livesplit-hotkey-indicator:not([show-text]) > .ls-value { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+/* Record colors override the ordinary ahead/behind palette only when confirmed. */
+[data-ls-part] [data-record="pb"][data-record-effect="color"] { color: var(--ls-pb-color, #16a6ff); }
+[data-ls-part] [data-record="bs"][data-record-effect="color"] { color: var(--ls-bs-color, #ffd700); }
+[data-ls-part] [data-record][data-record-effect="rainbow"] { animation: ls-record-rainbow var(--ls-rainbow-duration, 3.6s) linear infinite; }
+@keyframes ls-record-rainbow {
+  0%, 100% { color: #ff5555; }
+  16.667% { color: #ffff55; }
+  33.333% { color: #55ff55; }
+  50% { color: #55ffff; }
+  66.667% { color: #5555ff; }
+  83.333% { color: #ff55ff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ls-part] [data-record][data-record-effect="rainbow"] { animation: none; color: var(--ls-bs-color, #ffd700); }
+  [data-ls-part] [data-record="pb"][data-record-effect="rainbow"] { color: var(--ls-pb-color, #16a6ff); }
+}
