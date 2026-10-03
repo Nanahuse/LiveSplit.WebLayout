@@ -121,17 +121,48 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 
 `comparisons` に比較名を `|` 区切りで指定すると、それぞれの比較累積タイムと差分の列を追加します。LiveSplit内の比較名をそのまま指定してください。省略時はLiveSplitで選択中の比較です。比較の作成・編集はLiveSplit側で行います。
 
+この簡易指定では **Best Segmentsの差分だけは区間差分**、他の比較は累積差分です。前区間までに10秒遅れ、現在区間で1秒遅れた場合、Best Segmentsの区間差分は `+0:01.00` になります。表示開始の判定も区間差分用に切り替わり、累積で遅れているだけでは表示を開始しません。
+
 ```html
 <livesplit-splits comparisons="Personal Best|Best Segments|Average Segments"></livesplit-splits>
 ```
 
-現在区間の差分は、Best Segmentsの到達ペースを超えるか、比較の区間ペース・累積タイムを超えると、タイマー応答ごとに更新します。それ以前は「—」、終了した区間は確定した差分になります。無効化するには `live-delta="false"` を指定します。
+現在区間の差分は、Best Segmentsの到達ペースを超えるか、比較の区間ペースを超えると、タイマー応答ごとに更新します。累積差分の列では比較の累積タイム超過も表示開始条件になります。それ以前は「—」、終了した区間は確定した差分になります。無効化するには `live-delta="false"` を指定します。
+
+### 本体のColumns設定に対応する指定
+
+`columns` にJSON配列を指定すると、列名・種類・比較対象・並び順を個別に設定できます。この指定は `comparisons` より優先します。追加・削除・並べ替えは配列を編集してください。比較を省略するか `Current Comparison` を指定すると本体の選択中比較を使用します。
+
+```html
+<livesplit-splits total-splits="8" upcoming-splits="1" always-show-last-split
+  columns='[
+    {"name":"PB差分","type":"Delta","comparison":"Personal Best"},
+    {"name":"Best区間差分","type":"SegmentDelta","comparison":"Best Segments"},
+    {"name":"Time","type":"SplitTime","comparison":"Personal Best"}
+  ]'>
+</livesplit-splits>
+```
+
+| `type` | 本体のColumn Type | 現在・未完了区間 | 完了区間 |
+|---|---|---|---|
+| `SplitTime` | Split Time | 比較の累積タイム | 今回の累積タイム |
+| `SegmentTime` | Segment Time | 比較の区間タイム | 今回の区間タイム |
+| `Delta` | Delta | 条件成立後の累積差分 | 確定した累積差分 |
+| `SegmentDelta` | Segment Delta | 条件成立後の区間差分 | 確定した区間差分 |
+| `DeltaorSplitTime` | Delta or Split Time | 累積差分、未表示なら比較タイム | 累積差分、欠損なら今回のタイム |
+| `SegmentDeltaorSegmentTime` | Segment Delta or Segment Time | 区間差分、未表示なら比較区間タイム | 区間差分、欠損なら今回の区間タイム |
+
+追加の `ComparisonTime` は比較累積タイムを固定表示、`LiveTime` は現在区間で走行中の累積時計、完了区間で確定タイムを表示します。本体の `Split Time` は走行中の時計ではないため、両者を区別しています。
+
+`total-splits` は表示行数、`upcoming-splits` は先読み行数、`always-show-last-split` は最終区間の固定表示です。現在区間に合わせて表示範囲が移動します。指定しなければ全行表示です。
+
+本体UIのSplits設定と [列の実装](https://github.com/LiveSplit/LiveSplit.Splits/blob/master/src/LiveSplit.Splits/UI/Components/SplitComponent.cs) を確認して上記の計算・切り替えを合わせています。ただし標準WSだけでは完全な機能等価にはなりません。未到達・接続前の全比較値、各列独立のReal Time / Game Time、個別Best Segment、アイコン、区間カスタム変数は未対応です。スキップした区間は直前の有効な基準を取得できた場合だけ計算し、欠損した履歴は推測しません。色・精度・空行補充などの本体設定も自動インポートしません。
 
 標準WebSocketは各区間の `BestSegmentTime` を直接公開していないため、Best Segmentsの現在比較タイムと直近の確定差分から到達ペースを判定します。本体の [CheckLiveDelta](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Model/LiveSplitStateHelper.cs) にある個別Best Segmentの追加条件までは再現できません。特に区間スキップ・欠損値がある場合、本体と表示開始のタイミングが異なることがあります。比較値がない場合は推測せず「—」です。
 
 比較値は現在区間にいる間に取得・保存します。標準WSには任意の区間の比較タイムを読むコマンドがないため、未到達区間や接続前に通過した区間の比較タイムは「—」になります。列を途中追加した場合も取得以降の区間が対象です。比較を増やすほど初回取得・区間切り替え後の更新に時間がかかります。
 
-セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、ライブ差分セルには `data-live-delta` が付きます。列を装飾する例:
+セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、`data-column-type` は上記のtypeです。現在区間のセルには `data-live-column`、行には `data-split-index` が付きます。列を装飾する例:
 
 ```css
 livesplit-splits [data-column="comparison-time"] { opacity: .65; }

@@ -9,6 +9,7 @@ function sample(c: Comparisons, index = 1, phase = 'Running', end = index) {
     'getcomparisonsplittime Personal Best': '00:02:00', 'getdelta Personal Best': '-00:00:10',
     'getcomparisonsplittime Average Segments': '00:02:20', 'getdelta Average Segments': '-00:00:15',
     'getcomparisonsplittime Best Segments': '00:01:20', 'getdelta Best Segments': '00:00:10',
+    getlastsplittime: '00:01:00',
   };
   let indices = 0;
   while (c.next()) {
@@ -42,4 +43,17 @@ test('missing comparison and best values never create false deltas', () => {
   const c = new Comparisons(); c.begin();
   while (c.next()) c.receive('-');
   assert.equal(c.liveDelta(0, '', 123), null);
+});
+
+test('segment delta excludes earlier losses, before and after completion', () => {
+  const c = new Comparisons(); sample(c);
+  assert.equal(c.liveDelta(1, 'Best Segments', 89, true), null);
+  assert.equal(c.liveDelta(1, 'Best Segments', 90, true), null);
+  assert.equal(c.liveDelta(1, 'Best Segments', 91, true), 1);
+  assert.equal(c.liveDelta(1, 'Best Segments', 91), 11);
+  assert.equal(c.delta(1, 'Best Segments', 91, true), 1);
+  assert.equal(c.delta(1, 'Best Segments', 88, true), -2);
+  sample(c, 2, 'Ended');
+  assert.equal(c.delta(1, 'Best Segments', 91, true), 1);
+  assert.equal(c.liveDelta(1, 'Best Segments', 91, true), null);
 });

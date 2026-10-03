@@ -6,7 +6,7 @@ export function comparisonNames(value: string | null): string[] {
   return [...new Set(value.split('|').map(name => name.trim()).filter(name => name && !/[\r\n\0]/.test(name)))];
 }
 
-interface Comparison { target: number | null; previousDelta: number | null }
+interface Comparison { target: number | null; previousDelta: number | null; previousTime?: number | null }
 export class Comparisons {
   names = new Set<string>(['']);
   readonly rows = new Map<number, Map<string, Comparison>>();
@@ -21,7 +21,7 @@ export class Comparisons {
     this.sampledNames = [...new Set([...this.names, 'Best Segments'])];
     this.commands = ['getcurrenttimerphase', 'getsplitindex', 'gettimingmethod', 'getcomparisonname',
       ...this.sampledNames.flatMap<ReadCommand>(name => [name ? `getcomparisonsplittime ${name}` : 'getcomparisonsplittime', name ? `getdelta ${name}` : 'getdelta']),
-      'getcomparisonname', 'gettimingmethod', 'getsplitindex', 'getcurrenttimerphase'];
+      'getlastsplittime', 'getcomparisonname', 'gettimingmethod', 'getsplitindex', 'getcurrenttimerphase'];
     this.values = [];
     return this.commands;
   }
@@ -44,9 +44,15 @@ export class Comparisons {
     if (!['Running', 'Paused'].includes(phase) || index < 0) return;
     this.rows.set(index, new Map(this.sampledNames.map((name, i) => [name, {
       target: seconds(v[4 + i * 2]), previousDelta: index === 0 ? 0 : seconds(v[5 + i * 2]),
+      previousTime: index === 0 ? 0 : seconds(v[v.length - 5]),
     }])));
   }
-  liveDelta(index: number, name: string, current: number): number | null {
+  delta(index: number, name: string, actual: number, segment = false): number | null {
+    const comparison = this.rows.get(index)?.get(name);
+    if (comparison?.target == null || (segment && comparison.previousDelta == null)) return null;
+    return actual - comparison.target - (segment ? comparison.previousDelta! : 0);
+  }
+  liveDelta(index: number, name: string, current: number, segment = false): number | null {
     if (index !== this.index || !['Running', 'Paused'].includes(this.phase)) return null;
     const comparison = this.rows.get(index)?.get(name);
     if (comparison?.target == null) return null;
@@ -55,7 +61,8 @@ export class Comparisons {
     // Best Segments supplies the reachable cumulative pace. Unlike the native
     // helper, the server cannot expose the individual BestSegmentTime guard.
     const beyondBest = best?.target != null && best.previousDelta != null && current - best.target > best.previousDelta;
-    return delta > 0 || beyondBest || (comparison.previousDelta != null && delta > comparison.previousDelta) ? delta : null;
+    const visible = (!segment && delta > 0) || beyondBest || (comparison.previousDelta != null && delta > comparison.previousDelta);
+    return visible ? this.delta(index, name, current, segment) : null;
   }
   clear() { this.rows.clear(); this.index = -1; this.phase = ''; this.commands = []; this.values = []; }
 }

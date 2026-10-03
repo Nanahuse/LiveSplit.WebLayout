@@ -3,7 +3,7 @@ import { renderReadout } from './readout.ts';
 import { subscribe } from './session.ts';
 import type { Session } from './session.ts';
 import { metrics, metricTemplate } from './metrics.ts';
-import { comparisonNames } from './comparisons.ts';
+import { columnsFor } from './columns.ts';
 import { updateLiveSplits } from './split-view.ts';
 
 const templates: Record<string, string> = {
@@ -17,7 +17,7 @@ const templates: Record<string, string> = {
 
 // Light DOM allows ordinary CSS and user-supplied data-ls-field templates.
 class LiveSplitPart extends HTMLElement {
-  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'live-delta'];
+  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'columns', 'live-delta', 'total-splits', 'upcoming-splits', 'always-show-last-split'];
   private unsubscribe?: () => void;
   connectedCallback() {
     this.setAttribute('data-ls-part', '');
@@ -39,7 +39,7 @@ class LiveSplitPart extends HTMLElement {
     }
   }
   private bind() {
-    this.unsubscribe?.();
+    const previousSubscription = this.unsubscribe;
     this.unsubscribe = undefined;
     for (const list of this.querySelectorAll<HTMLElement>('[data-ls-field="splits"]')) delete list.dataset.signature;
     const value = this.querySelector<HTMLElement>('[data-ls-value]');
@@ -47,11 +47,12 @@ class LiveSplitPart extends HTMLElement {
     try {
       const server = this.getAttribute('server');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
-      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), this.localName === 'livesplit-splits' ? comparisonNames(this.getAttribute('comparisons')) : []);
+      const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : [];
+      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons);
     } catch {
       this.dataset.state = 'error';
-      for (const element of this.querySelectorAll('[data-ls-field]')) element.textContent = '接続先エラー';
-    }
+      for (const element of this.querySelectorAll('[data-ls-field]')) element.textContent = '接続先・列設定エラー';
+    } finally { previousSubscription?.(); }
   }
   private render(session: Session, tick: boolean) {
     this.dataset.state = session.status;

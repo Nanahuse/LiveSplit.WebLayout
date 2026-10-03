@@ -74,9 +74,21 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(delta(), '—');
     sockets[0].onmessage?.({ data: '00:01:31' });
     assert.equal(delta(), '-0:29.00');
+    const bestDelta = () => splits.querySelector('.active [data-column-type="SegmentDelta"]')?.textContent;
+    assert.equal(bestDelta(), '+0:01.00');
     t.mock.timers.tick(33);
     sockets[0].onmessage?.({ data: '00:01:32' });
     assert.equal(delta(), '-0:28.00');
+    assert.equal(bestDelta(), '+0:02.00');
+    splits.setAttribute('columns', JSON.stringify([
+      { type: 'SegmentDelta', comparison: 'Best Segments', name: '<Best>' },
+      { type: 'DeltaorSplitTime', comparison: 'Personal Best', name: 'PB' },
+    ]));
+    assert.equal(splits.querySelectorAll('thead th').length, 3);
+    assert.equal(splits.querySelectorAll('thead th')[1].textContent, '<Best>');
+    assert.equal(splits.querySelector('best'), null);
+    assert.equal(bestDelta(), '+0:02.00');
+    splits.removeAttribute('columns');
     splits.setAttribute('live-delta', 'false');
     assert.equal(delta(), '—');
     assert.equal(sockets.length, 2);
@@ -90,6 +102,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(best.querySelector('.ls-label')?.textContent, 'Best Possible Time');
     assert.equal(sockets.length, 2); // label changes must not reset shared history
     responses.getbestpossibletime = '-'; responses.getcurrenttimerphase = 'Ended';
+    responses.getsplitindex = '2'; responses.getlastsplittime = '00:01:32';
     responses.getdelta = '00:00:02';
     for (let i = 0; i < 400; i++) {
       sockets[0].onmessage?.({ data: '00:01:23.45' });
@@ -99,6 +112,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(text('livesplit-best-possible-time'), '—');
     assert.equal(body.querySelector('livesplit-final-time .ls-label')?.textContent, '完走タイム');
     assert.equal(body.querySelector('livesplit-delta .ls-value')?.getAttribute('data-sign'), 'behind');
+    assert.equal(splits.querySelector('[data-split-index="1"] [data-column-type="SegmentDelta"]')?.textContent, '+0:02.00');
     body.querySelector('livesplit-timer')!.remove();
     assert.equal(sockets[0].closed, false);
     body.innerHTML = '';

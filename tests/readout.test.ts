@@ -81,7 +81,7 @@ test('fast snapshots run every 100ms while static metadata has independent deadl
       run.receive(command, command === 'getsplitcount' ? '1000' : '-');
       requests++;
     } while (run.nextDelay() === 0);
-    assert.ok(requests <= 26, 'a large split list must not delay the next snapshot');
+    assert.ok(requests <= 27, 'a large split list must not delay the next snapshot');
     t.mock.timers.tick(run.nextDelay());
   }
   const phases = [...new Set(reads.get('getcurrenttimerphase'))];
