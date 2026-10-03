@@ -2,25 +2,40 @@ import { getEndpoint } from './timer.ts';
 import { renderReadout } from './readout.ts';
 import { subscribe } from './session.ts';
 import type { Session } from './session.ts';
+import { metrics, metricTemplate } from './metrics.ts';
 
-const templates = {
+const templates: Record<string, string> = {
   'livesplit-timer': '<span class="ls-timer" role="timer" aria-live="off"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></span>',
   'livesplit-game': '<div class="ls-game" data-ls-field="game">—</div><div class="ls-category" data-ls-field="category">—</div>',
   'livesplit-splits': '<table class="ls-splits" aria-label="Splits"><thead><tr><th scope="col">区間</th><th scope="col">比較差</th><th scope="col">累積タイム</th></tr></thead><tbody data-ls-field="splits"></tbody></table>',
   'livesplit-status': '<span data-ls-field="status" role="status">接続中</span>',
   'livesplit-value': '<span data-ls-value>—</span>',
-} as const;
+  ...Object.fromEntries(Object.entries(metrics).map(([name, metric]) => [name, metricTemplate(metric)])),
+};
 
 // Light DOM allows ordinary CSS and user-supplied data-ls-field templates.
 class LiveSplitPart extends HTMLElement {
-  static observedAttributes = ['server', 'field'];
+  static observedAttributes = ['server', 'field', 'label', 'hide-label'];
   private unsubscribe?: () => void;
   connectedCallback() {
+    this.setAttribute('data-ls-part', '');
     if (!this.children.length) this.innerHTML = templates[this.localName as keyof typeof templates];
     this.bind();
   }
   disconnectedCallback() { this.unsubscribe?.(); this.unsubscribe = undefined; }
-  attributeChangedCallback() { if (this.isConnected) this.bind(); }
+  attributeChangedCallback(name: string) {
+    if (!this.isConnected) return;
+    if (name === 'label' || name === 'hide-label') this.updateLabel();
+    else this.bind();
+  }
+  private updateLabel() {
+    const definition = metrics[this.localName as keyof typeof metrics];
+    for (const label of this.querySelectorAll<HTMLElement>('.ls-label')) {
+      label.hidden = this.hasAttribute('hide-label');
+      if (this.hasAttribute('label')) label.textContent = this.getAttribute('label');
+      else if (definition && !label.hasAttribute('data-ls-field')) label.textContent = definition.label;
+    }
+  }
   private bind() {
     this.unsubscribe?.();
     this.unsubscribe = undefined;
@@ -48,6 +63,7 @@ class LiveSplitPart extends HTMLElement {
     set('status', { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[session.status]);
     set('endpoint', session.endpoint);
     renderReadout(session.run, this);
+    this.updateLabel();
   }
 }
 for (const name of Object.keys(templates)) {

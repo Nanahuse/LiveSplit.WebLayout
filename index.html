@@ -11,9 +11,7 @@
     main { max-width: 760px; margin: auto; display: grid; gap: 24px; }
     header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
     livesplit-timer { text-align: center; --ls-timer-size: clamp(40px, 10vw, 100px); }
-    .metrics { display: flex; flex-wrap: wrap; gap: 32px; }
-    .metrics > div > span { font-size: 12px; opacity: .65; }
-    .metrics livesplit-value { font-size: 24px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 24px; }
     .note { font-size: 12px; opacity: .6; }
   </style>
 </head>
@@ -23,10 +21,19 @@
     <livesplit-timer></livesplit-timer>
     <livesplit-splits></livesplit-splits>
     <div class="metrics">
-      <div><span>比較との差</span><livesplit-value field="delta"></livesplit-value></div>
-      <div><span>最速完走予測</span><livesplit-value field="best-possible"></livesplit-value></div>
-      <div><span>挑戦回数</span><livesplit-value field="attempts"></livesplit-value></div>
-      <div><span>状態</span><livesplit-value field="phase"></livesplit-value></div>
+      <livesplit-best-possible-time></livesplit-best-possible-time>
+      <livesplit-delta></livesplit-delta>
+      <livesplit-previous-split></livesplit-previous-split>
+      <livesplit-comparison-time></livesplit-comparison-time>
+      <livesplit-final-time></livesplit-final-time>
+      <livesplit-current-split></livesplit-current-split>
+      <livesplit-previous-split-name></livesplit-previous-split-name>
+      <livesplit-split-progress></livesplit-split-progress>
+      <livesplit-attempts></livesplit-attempts>
+      <livesplit-completed-attempts></livesplit-completed-attempts>
+      <livesplit-phase></livesplit-phase>
+      <livesplit-comparison></livesplit-comparison>
+      <livesplit-timing-method></livesplit-timing-method>
     </div>
     <livesplit-value class="note" field="split-note"></livesplit-value>
   </main>

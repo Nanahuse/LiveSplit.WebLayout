@@ -49,6 +49,34 @@ npm run build
 | `livesplit-status` | 接続状態 |
 | `livesplit-value field="…"` | 任意の単独項目 |
 
+### 専用のUIコンポーネント
+
+次のタグはラベルと値をセットで表示します。すべて独立配置・複製・`server`指定・独自HTMLの指定に対応し、既存の接続を共有します。
+
+| タグ | 表示内容 |
+| --- | --- |
+| `livesplit-best-possible-time` | Best Possible Time（LiveSplitの最速完走予測） |
+| `livesplit-delta` | 比較との差。先行・遅延で色分け |
+| `livesplit-previous-split` | 直前に終了した区間の累積タイム（区間単体の所要時間ではありません） |
+| `livesplit-comparison-time` | 現在区間の比較累積タイム |
+| `livesplit-final-time` | 比較の最終タイム。終了後は完走タイムとそのラベルに切り替え |
+| `livesplit-current-split` | 現在区間名 |
+| `livesplit-previous-split-name` | 直前区間名 |
+| `livesplit-split-progress` | 区間進捗 |
+| `livesplit-attempts` | 挑戦回数 |
+| `livesplit-completed-attempts` | 完走回数 |
+| `livesplit-phase` | 待機中・計測中・一時停止・完走 |
+| `livesplit-comparison` | 比較対象の名前 |
+| `livesplit-timing-method` | Real Time / Game Time |
+
+```html
+<livesplit-best-possible-time label="最速完走予測"></livesplit-best-possible-time>
+<livesplit-delta hide-label></livesplit-delta>
+<livesplit-attempts label="Attempts"></livesplit-attempts>
+```
+
+`label`でラベルを変更、`hide-label`でラベルを非表示にできます。ラベル変更では通信を再接続しません。内部の `.ls-label` と `.ls-value` を通常のCSSで装飾でき、`--ls-label-size`（既定0.75rem）・`--ls-value-size`（既定1.5rem）も使えます。未取得や比較タイム未設定の場合は「—」です。専用タグを使っても、同等の`livesplit-value`を使っても数値の意味は変わりません。
+
 不要なタグは削除し、自由に並べ替え・複製できます。同じ接続先のパーツは通信と走行履歴を共有します。最後のパーツを取り除くと接続を閉じます。独自のページ全体を書き換えたり、グローバルなIDに依存したりしません。
 
 `field`に指定できる項目:

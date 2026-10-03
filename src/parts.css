@@ -1,5 +1,8 @@
 /* Optional component styles. No page-wide layout or background. */
-:where(livesplit-timer, livesplit-game, livesplit-splits, livesplit-status, livesplit-value) { display: block; color: var(--ls-color, inherit); font-family: var(--ls-font, inherit); }
+:where([data-ls-part]) { display: block; color: var(--ls-color, inherit); font-family: var(--ls-font, inherit); }
+[data-ls-part] > .ls-label { display: block; font-size: var(--ls-label-size, .75rem); color: var(--ls-muted, #82919f); margin-bottom: .4em; }
+[data-ls-part] > .ls-label[hidden] { display: none; }
+[data-ls-part] > .ls-value { display: block; font-size: var(--ls-value-size, 1.5rem); font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 livesplit-timer .ls-timer { font-size: var(--ls-timer-size, 5rem); font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ls-accent, #67e8b0); }
 livesplit-timer .ls-fraction { font-size: .52em; }
 livesplit-timer:not([data-state="connected"]) .ls-timer { color: var(--ls-muted, #82919f); }
@@ -12,5 +15,5 @@ livesplit-splits td { font-family: var(--ls-time-font, Consolas, monospace); fon
 livesplit-splits .active { background: var(--ls-active-background, #234238); color: var(--ls-accent, #67e8b0); }
 livesplit-splits .split-number { opacity: .55; }
 livesplit-splits .splits-empty { white-space: normal; text-align: center; opacity: .7; }
-:where(livesplit-splits, livesplit-value) [data-sign="ahead"] { color: var(--ls-ahead, #67e8b0); }
-:where(livesplit-splits, livesplit-value) [data-sign="behind"] { color: var(--ls-behind, #efad9d); }
+[data-ls-part] [data-sign="ahead"] { color: var(--ls-ahead, #67e8b0); }
+[data-ls-part] [data-sign="behind"] { color: var(--ls-behind, #efad9d); }
