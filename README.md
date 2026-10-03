@@ -168,6 +168,36 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 livesplit-splits [data-column="comparison-time"] { opacity: .65; }
 ```
 
+### 区間・ペース表示パーツ
+
+以下も独立したパーツとして配置できます。共通の `label` / `hide-label` / `server` 属性とCSSによる装飾を使用できます。
+
+| パーツ | `livesplit-value`のfield | 表示 |
+|---|---|---|
+| `livesplit-segment-timer` | `segment-time` | 現在区間の経過時間。完走後は最終区間の確定時間 |
+| `livesplit-previous-segment` | `previous-segment-time` | 直前に終了した区間の実測時間（累積ではない） |
+| `livesplit-live-segment` | `live-segment-delta` | 選択中比較に対する現在区間の差分。Splitsと同じ表示開始条件 |
+| `livesplit-current-pace` | `current-pace` | `getpredictedtime`が返す現在の比較を使った完走予測 |
+| `livesplit-sum-of-best` | `sum-of-best` | Best Segments比較の最終累積タイム |
+| `livesplit-real-time` | `real-time` | 選択中の計測方法にかかわらずReal Time |
+| `livesplit-game-time` | `game-time` | サーバーのGame Time取得値 |
+
+```html
+<livesplit-segment-timer label="この区間"></livesplit-segment-timer>
+<livesplit-previous-segment></livesplit-previous-segment>
+<livesplit-live-segment></livesplit-live-segment>
+<livesplit-current-pace></livesplit-current-pace>
+<livesplit-sum-of-best></livesplit-sum-of-best>
+<livesplit-real-time></livesplit-real-time>
+<livesplit-game-time></livesplit-game-time>
+```
+
+区間タイマーは約33msのタイマー応答で更新します。区間開始点が不明な途中接続・取り逃した区間では「—」となります。記録したスキップ区間は直前の有効な区間までさかのぼって計算します。待機中は区間タイマー・区間差分とも「—」です。直前の**累積**タイムが必要なら従来の `livesplit-previous-split` を使用してください。
+
+Current Pace・Real Time・Game Timeは補助情報の高速周期（目標100ms）で更新します。Game Timeが初期化されていない場合、標準サーバーはReal Timeを返すため、その値を表示します。
+
+Sum of Bestは本体が生成したBest Segments比較を取得します。本体のSum of Bestコンポーネントが走行中の新記録を含めて再計算した値とは異なる場合があります。完走後の `getfinaltime` は実測値になるため、完走前の最後の比較値を保持します。完走後に初めて接続した場合や完走後に計測方法を切り替えた場合は「—」となります。
+
 ## 接続先
 
 既定は `ws://localhost:16834/livesplit`。各パーツの `server` 属性で指定できます。属性がない場合はページURLの `?server=…`、次に既定値の順で使用します。別の接続先を指定したパーツは別の通信を使います。

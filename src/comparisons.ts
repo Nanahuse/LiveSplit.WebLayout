@@ -12,6 +12,7 @@ export class Comparisons {
   readonly rows = new Map<number, Map<string, Comparison>>();
   index = -1;
   phase = '';
+  sumOfBest: number | null = null;
   private method = '';
   private selected = '';
   private commands: ReadCommand[] = [];
@@ -21,7 +22,7 @@ export class Comparisons {
     this.sampledNames = [...new Set([...this.names, 'Best Segments'])];
     this.commands = ['getcurrenttimerphase', 'getsplitindex', 'gettimingmethod', 'getcomparisonname',
       ...this.sampledNames.flatMap<ReadCommand>(name => [name ? `getcomparisonsplittime ${name}` : 'getcomparisonsplittime', name ? `getdelta ${name}` : 'getdelta']),
-      'getlastsplittime', 'getcomparisonname', 'gettimingmethod', 'getsplitindex', 'getcurrenttimerphase'];
+      'getfinaltime Best Segments', 'getlastsplittime', 'getcomparisonname', 'gettimingmethod', 'getsplitindex', 'getcurrenttimerphase'];
     this.values = [];
     return this.commands;
   }
@@ -36,6 +37,10 @@ export class Comparisons {
     if (!phase || phase !== v.at(-1) || indexText !== v.at(-2) || method !== v.at(-3) || selected !== v.at(-4)) return;
     const index = Number(indexText);
     if (!/^-?\d+$/.test(indexText) || index < -1 || index > 1000) return;
+    if (method !== this.method) this.sumOfBest = null;
+    // getfinaltime returns the actual result after finishing, not the comparison.
+    // Retain the last verified comparison instead of relabeling the result as SoB.
+    if (['NotRunning', 'Running', 'Paused'].includes(phase)) this.sumOfBest = seconds(v[v.length - 6]);
     if (method !== this.method || selected !== this.selected || phase === 'NotRunning') this.rows.clear();
     if (index < this.index || (this.phase === 'Ended' && phase !== 'Ended')) {
       for (const key of this.rows.keys()) if (key >= index) this.rows.delete(key);
@@ -64,5 +69,5 @@ export class Comparisons {
     const visible = (!segment && delta > 0) || beyondBest || (comparison.previousDelta != null && delta > comparison.previousDelta);
     return visible ? this.delta(index, name, current, segment) : null;
   }
-  clear() { this.rows.clear(); this.index = -1; this.phase = ''; this.commands = []; this.values = []; }
+  clear() { this.rows.clear(); this.sumOfBest = null; this.index = -1; this.phase = ''; this.commands = []; this.values = []; }
 }

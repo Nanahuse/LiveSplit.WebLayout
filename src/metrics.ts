@@ -1,5 +1,12 @@
 // Dedicated tags share the same field bindings as livesplit-value.
 export const metrics = {
+  'livesplit-segment-timer': { field: 'segment-time', label: '区間タイマー' },
+  'livesplit-previous-segment': { field: 'previous-segment-time', label: '直前の区間タイム' },
+  'livesplit-live-segment': { field: 'live-segment-delta', label: '現在区間の差分' },
+  'livesplit-current-pace': { field: 'current-pace', label: 'Current Pace' },
+  'livesplit-sum-of-best': { field: 'sum-of-best', label: 'Sum of Best' },
+  'livesplit-real-time': { field: 'real-time', label: 'Real Time' },
+  'livesplit-game-time': { field: 'game-time', label: 'Game Time' },
   'livesplit-best-possible-time': { field: 'best-possible', label: 'Best Possible Time' },
   'livesplit-delta': { field: 'delta', label: '比較との差' },
   'livesplit-previous-split': { field: 'last-split', label: '直前の累積タイム' },

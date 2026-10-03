@@ -97,6 +97,9 @@ test('real LiveSplit: reads supplementary fields while tolerating unsupported co
     client.start(); await done;
     assert.match(run.values.get('getcurrenttimerphase') ?? '', /^(NotRunning|Running|Paused|Ended)$/);
     assert.match(run.values.get('getsplitindex') ?? '', /^-?\d+$/);
+    for (const command of ['getpredictedtime', 'getcurrentrealtime', 'getcurrentgametime'] as const) {
+      assert.ok(formatTime(run.values.get(command) ?? ''), `${command} should return a time`);
+    }
     console.log(`Supplementary fields: ${run.values.size} values; ${run.unavailable.size} unanswered commands`);
     console.log(`Fast read cycle average: ${Math.round((cycles.at(-1)! - cycles[0]) / (cycles.length - 1))}ms (${cycles.length} cycles)`);
   } finally { clearTimeout(deadline); client.stop(); }

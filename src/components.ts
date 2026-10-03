@@ -5,6 +5,7 @@ import type { Session } from './session.ts';
 import { metrics, metricTemplate } from './metrics.ts';
 import { columnsFor } from './columns.ts';
 import { updateLiveSplits } from './split-view.ts';
+import { renderSegmentMetrics } from './segment-metrics.ts';
 
 const templates: Record<string, string> = {
   'livesplit-timer': '<span class="ls-timer" role="timer" aria-live="off"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></span>',
@@ -47,7 +48,7 @@ class LiveSplitPart extends HTMLElement {
     try {
       const server = this.getAttribute('server');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
-      const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : [];
+      const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : this.querySelector('[data-ls-field="live-segment-delta"]') ? [''] : [];
       this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons);
     } catch {
       this.dataset.state = 'error';
@@ -61,6 +62,7 @@ class LiveSplitPart extends HTMLElement {
     };
     set('whole', session.time.whole); set('fraction', session.time.fraction);
     set('time', `${session.time.whole}${session.time.fraction}`);
+    renderSegmentMetrics(session.run, this);
     for (const cell of this.querySelectorAll('[data-live]')) cell.textContent = session.run.liveTime;
     if (tick) { updateLiveSplits(session.run, this); return; }
     set('status', { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[session.status]);

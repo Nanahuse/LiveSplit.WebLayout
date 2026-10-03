@@ -6,6 +6,7 @@ import { SplitHistory, splitCommands } from './splits.ts';
 
 const fastCommands: ReadCommand[] = [
   ...splitCommands, 'getdelta', 'getbestpossibletime', 'getfinaltime',
+  'getpredictedtime', 'getcurrentrealtime', 'getcurrentgametime',
   'gettimingmethod', 'getcomparisonname',
 ];
 const slowCommands: ReadCommand[] = ['getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount'];
@@ -20,6 +21,7 @@ export class RunReadout {
   private queue: { command: ReadCommand; comparison: boolean }[] = [];
   private nextPoll = 0;
   private slowCursor = 0;
+  private metadataCursor = 0;
   private readonly refreshAt = new Map<ReadCommand, number>();
   private readonly retryAfter = new Map<ReadCommand, number>();
   readonly unavailable = new Set<ReadCommand>();
@@ -35,13 +37,14 @@ export class RunReadout {
       // At most one low-priority read per cycle: long split lists never block
       // the next state snapshot. Each field has its own refresh deadline.
       const names = Array.from({ length: this.count }, (_, i): ReadCommand => `getsplitname ${(this.slowCursor + i) % this.count}`);
-      const slow: ReadCommand[] = [...slowCommands, ...names];
+      const slow: ReadCommand[] = [...slowCommands.slice(this.metadataCursor), ...slowCommands.slice(0, this.metadataCursor), ...names];
       for (let i = 0; i < slow.length; i++) {
         const command = slow[i];
         if (Math.max(this.refreshAt.get(command) ?? 0, this.retryAfter.get(command) ?? 0) > now) continue;
         this.refreshAt.set(command, now + (command === 'getattemptcount' || command === 'getcompletedcount' ? 1000 : 5000));
         this.queue.push({ command, comparison: false });
         if (command.startsWith('getsplitname ')) this.slowCursor = Number(command.slice('getsplitname '.length)) + 1;
+        else this.metadataCursor = (slowCommands.indexOf(command) + 1) % slowCommands.length;
         break;
       }
     }
@@ -81,7 +84,7 @@ export class RunReadout {
     return Number.isSafeInteger(count) && count >= 0 ? Math.min(count, 1000) : 0;
   }
 
-  clear() { this.comparisons.clear(); this.readingComparisons = false; this.history.clear(); this.liveTime = '—'; this.values.clear(); this.names.clear(); this.retryAfter.clear(); this.unavailable.clear(); this.queue = []; this.nextPoll = this.slowCursor = 0; this.refreshAt.clear(); }
+  clear() { this.comparisons.clear(); this.readingComparisons = false; this.history.clear(); this.liveTime = '—'; this.values.clear(); this.names.clear(); this.retryAfter.clear(); this.unavailable.clear(); this.queue = []; this.nextPoll = this.slowCursor = this.metadataCursor = 0; this.refreshAt.clear(); }
 }
 
 export function displayTime(value?: string, delta = false): string {

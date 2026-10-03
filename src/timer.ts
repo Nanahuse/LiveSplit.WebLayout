@@ -1,7 +1,7 @@
 // LiveSplit uses the constant TimeSpan format: [-][d.]hh:mm:ss[.fffffff].
 export interface TimerDisplay { whole: string; fraction: string }
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
-export type ReadCommand = 'getgamename' | 'getcategoryname' | 'getcurrenttimerphase' | 'gettimingmethod' | 'getcomparisonname' | 'getattemptcount' | 'getcompletedcount' | 'getsplitcount' | 'getsplitindex' | 'getcurrentsplitname' | 'getprevioussplitname' | 'getcomparisonsplittime' | 'getlastsplittime' | 'getdelta' | 'getbestpossibletime' | 'getfinaltime' | `getsplitname ${number}` | `getcomparisonsplittime ${string}` | `getdelta ${string}`;
+export type ReadCommand = 'getpredictedtime' | 'getcurrentrealtime' | 'getcurrentgametime' | 'getfinaltime Best Segments' | 'getgamename' | 'getcategoryname' | 'getcurrenttimerphase' | 'gettimingmethod' | 'getcomparisonname' | 'getattemptcount' | 'getcompletedcount' | 'getsplitcount' | 'getsplitindex' | 'getcurrentsplitname' | 'getprevioussplitname' | 'getcomparisonsplittime' | 'getlastsplittime' | 'getdelta' | 'getbestpossibletime' | 'getfinaltime' | `getsplitname ${number}` | `getcomparisonsplittime ${string}` | `getdelta ${string}`;
 export type TimerSocket = Pick<WebSocket, 'onopen' | 'onmessage' | 'onerror' | 'onclose' | 'send' | 'close'>;
 interface ConnectionOptions {
   onTime: (time: TimerDisplay) => void;

@@ -39,6 +39,8 @@ test('parts share connections, render independently, and release sockets when re
       getcomparisonname: 'Personal Best', getattemptcount: '42', getcompletedcount: '12', getsplitcount: '0',
       'getcomparisonsplittime Personal Best': '00:02:00', 'getdelta Personal Best': '-00:00:01',
       'getcomparisonsplittime Best Segments': '00:01:20', 'getdelta Best Segments': '00:00:10',
+      'getfinaltime Best Segments': '00:04:30', getpredictedtime: '00:05:58.75',
+      getcurrentrealtime: '00:01:23.45', getcurrentgametime: '00:01:20.25',
     };
     sockets[1].onopen?.();
     for (let i = 0; i < 400; i++) {
@@ -61,6 +63,13 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(text('livesplit-phase'), '計測中');
     assert.equal(text('livesplit-comparison'), 'Personal Best');
     assert.equal(text('livesplit-timing-method'), 'Real Time');
+    assert.equal(text('livesplit-segment-timer'), '0:24.45');
+    assert.equal(text('livesplit-previous-segment'), '0:59.00');
+    assert.equal(text('livesplit-live-segment'), '—');
+    assert.equal(text('livesplit-current-pace'), '5:58.75');
+    assert.equal(text('livesplit-sum-of-best'), '4:30.00');
+    assert.equal(text('livesplit-real-time'), '1:23.45');
+    assert.equal(text('livesplit-game-time'), '1:20.25');
     assert.equal(sockets.length, 2);
     const splits = body.querySelector('livesplit-splits')!;
     splits.setAttribute('comparisons', 'Personal Best|Best Segments');
@@ -76,6 +85,8 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(delta(), '-0:29.00');
     const bestDelta = () => splits.querySelector('.active [data-column-type="SegmentDelta"]')?.textContent;
     assert.equal(bestDelta(), '+0:01.00');
+    assert.equal(text('livesplit-segment-timer'), '0:32.00');
+    assert.equal(text('livesplit-live-segment'), '-0:27.75');
     t.mock.timers.tick(33);
     sockets[0].onmessage?.({ data: '00:01:32' });
     assert.equal(delta(), '-0:28.00');
@@ -103,6 +114,7 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(sockets.length, 2); // label changes must not reset shared history
     responses.getbestpossibletime = '-'; responses.getcurrenttimerphase = 'Ended';
     responses.getsplitindex = '2'; responses.getlastsplittime = '00:01:32';
+    responses['getfinaltime Best Segments'] = '00:01:32';
     responses.getdelta = '00:00:02';
     for (let i = 0; i < 400; i++) {
       sockets[0].onmessage?.({ data: '00:01:23.45' });
@@ -110,6 +122,10 @@ test('parts share connections, render independently, and release sockets when re
       t.mock.timers.tick(33);
     }
     assert.equal(text('livesplit-best-possible-time'), '—');
+    assert.equal(text('livesplit-sum-of-best'), '4:30.00');
+    assert.equal(text('livesplit-segment-timer'), '0:33.00');
+    assert.equal(text('livesplit-previous-segment'), '0:33.00');
+    assert.equal(text('livesplit-live-segment'), '—');
     assert.equal(body.querySelector('livesplit-final-time .ls-label')?.textContent, '完走タイム');
     assert.equal(body.querySelector('livesplit-delta .ls-value')?.getAttribute('data-sign'), 'behind');
     assert.equal(splits.querySelector('[data-split-index="1"] [data-column-type="SegmentDelta"]')?.textContent, '+0:02.00');
