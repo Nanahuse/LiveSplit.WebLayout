@@ -21,6 +21,10 @@ test('parts share connections, render independently, and release sockets when re
   await import('../src/components.ts');
   const body = dom.document.body;
   try {
+    body.innerHTML = '<livesplit-text left="&lt;b&gt;text&lt;/b&gt;" right="static"></livesplit-text>';
+    assert.equal(sockets.length, 0);
+    assert.equal(body.querySelector('[data-text-side="left"]')?.textContent, '<b>text</b>');
+    assert.equal(body.querySelector('b'), null);
     body.innerHTML = '<h1>My layout</h1><livesplit-timer></livesplit-timer><livesplit-timer><b data-ls-field="time"></b></livesplit-timer><livesplit-value field="phase"></livesplit-value><livesplit-splits></livesplit-splits>';
     assert.equal(sockets.length, 1);
     const initialSplits = body.querySelector('livesplit-splits')!;
@@ -34,6 +38,10 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(body.querySelector('h1')?.textContent, 'My layout');
     assert.equal(body.querySelectorAll('[id]').length, 0);
     for (const tag of Object.keys(metrics)) body.appendChild(dom.document.createElement(tag));
+    for (const tag of ['livesplit-detailed-timer', 'livesplit-text']) body.appendChild(dom.document.createElement(tag));
+    body.querySelector('livesplit-text')!.setAttribute('right-field', 'time');
+    const customText = dom.document.createElement('livesplit-text');
+    customText.setAttribute('right-variable', 'My Counter'); body.appendChild(customText);
     const responses: Record<string, string> = {
       getcurrenttimerphase: 'Running', getsplitindex: '1', getcurrentsplitname: 'Second',
       getprevioussplitname: 'First', getcomparisonsplittime: '00:02:00', getlastsplittime: '00:00:59',
@@ -44,6 +52,7 @@ test('parts share connections, render independently, and release sockets when re
       'getcomparisonsplittime Best Segments': '00:01:20', 'getdelta Best Segments': '00:00:10',
       'getfinaltime Best Segments': '00:04:30', getpredictedtime: '00:05:58.75',
       getcurrentrealtime: '00:01:23.45', getcurrentgametime: '00:01:20.25',
+      globalhotkeysenabled: 'True', 'getcustomvariablevalue My Counter': '<b>42</b>',
     };
     sockets[1].onopen?.();
     for (let i = 0; i < 400; i++) {
@@ -73,6 +82,13 @@ test('parts share connections, render independently, and release sockets when re
     assert.equal(text('livesplit-sum-of-best'), '4:30.00');
     assert.equal(text('livesplit-real-time'), '1:23.45');
     assert.equal(text('livesplit-game-time'), '1:20.25');
+    assert.equal(text('livesplit-hotkey-indicator'), '有効');
+    assert.equal(customText.querySelector('[data-ls-variable]')?.textContent, '<b>42</b>');
+    assert.equal(customText.querySelector('b'), null);
+    assert.equal(body.querySelector('livesplit-text [data-text-side="right"]')?.textContent, '1:23.45');
+    assert.equal(body.querySelector('livesplit-detailed-timer .ls-segment-time')?.textContent, '0:24.45');
+    assert.equal(body.querySelector('[data-comparison-value="1"]')?.textContent, '1:00.00');
+    assert.equal(body.querySelector('[data-comparison-value="2"]')?.textContent, '0:31.00');
     assert.equal(sockets.length, 2);
     const splits = body.querySelector('livesplit-splits')!;
     splits.setAttribute('comparisons', 'Personal Best|Best Segments');

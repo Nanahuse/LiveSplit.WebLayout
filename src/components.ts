@@ -7,6 +7,7 @@ import { columnsFor } from './columns.ts';
 import { updateLiveSplits } from './split-view.ts';
 import { renderSegmentMetrics } from './segment-metrics.ts';
 import { splitSettings } from './split-settings.ts';
+import { layoutTemplates, configureLayout, detailedComparisons, renderDetailed, textVariables, renderText } from './layout-parts.ts';
 
 const templates: Record<string, string> = {
   'livesplit-timer': '<span class="ls-timer" role="timer" aria-live="off"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></span>',
@@ -15,11 +16,12 @@ const templates: Record<string, string> = {
   'livesplit-status': '<span data-ls-field="status" role="status">接続中</span>',
   'livesplit-value': '<span data-ls-value>—</span>',
   ...Object.fromEntries(Object.entries(metrics).map(([name, metric]) => [name, metricTemplate(metric)])),
+  ...layoutTemplates,
 };
 
 // Light DOM allows ordinary CSS and user-supplied data-ls-field templates.
 class LiveSplitPart extends HTMLElement {
-  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'settings', 'columns', 'live-delta', 'total-splits', 'upcoming-splits', 'always-show-last-split'];
+  static observedAttributes = ['server', 'field', 'label', 'hide-label', 'comparisons', 'settings', 'columns', 'live-delta', 'total-splits', 'upcoming-splits', 'always-show-last-split', 'comparison1', 'comparison2', 'left', 'right', 'left-field', 'right-field', 'left-variable', 'right-variable'];
   private unsubscribe?: () => void;
   connectedCallback() {
     this.setAttribute('data-ls-part', '');
@@ -47,14 +49,19 @@ class LiveSplitPart extends HTMLElement {
     const value = this.querySelector<HTMLElement>('[data-ls-value]');
     if (value) value.dataset.lsField = this.getAttribute('field') ?? 'phase';
     try {
+      configureLayout(this);
+      if ((this.localName === 'livesplit-text' && !this.querySelector('[data-ls-field], [data-ls-variable]'))) {
+        this.dataset.state = 'static'; return;
+      }
       const server = this.getAttribute('server');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
       if (this.localName === 'livesplit-splits') splitSettings(this);
       const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : this.querySelector('[data-ls-field="live-segment-delta"]') ? [''] : [];
-      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons);
+      if (this.localName === 'livesplit-detailed-timer') comparisons.push(...detailedComparisons(this));
+      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons, textVariables(this));
     } catch (error) {
       this.dataset.state = 'error';
-      for (const element of this.querySelectorAll('[data-ls-field]')) element.textContent = `設定エラー: ${error instanceof Error ? error.message : '接続先・列設定を確認してください'}`;
+      for (const element of this.querySelectorAll('[data-ls-field], [data-ls-variable], [data-text-side]')) element.textContent = `設定エラー: ${error instanceof Error ? error.message : '接続先・列設定を確認してください'}`;
     } finally { previousSubscription?.(); }
   }
   private render(session: Session, tick: boolean) {
@@ -65,6 +72,8 @@ class LiveSplitPart extends HTMLElement {
     set('whole', session.time.whole); set('fraction', session.time.fraction);
     set('time', `${session.time.whole}${session.time.fraction}`);
     renderSegmentMetrics(session.run, this);
+    renderDetailed(session.run, this);
+    renderText(session.run, this);
     for (const cell of this.querySelectorAll('[data-live]')) cell.textContent = session.run.liveTime;
     if (tick) { updateLiveSplits(session.run, this); return; }
     set('status', { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[session.status]);

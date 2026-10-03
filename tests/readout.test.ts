@@ -113,6 +113,31 @@ test('metadata refreshes periodically and reconnect clears all deadlines', t => 
   assert.ok(commands.includes('getgamename'));
 });
 
+test('custom variables rotate once per cycle, retain text and stop when unrequested', t => {
+  t.mock.timers.enable({ apis: ['Date'] });
+  const run = new RunReadout();
+  run.variables = new Set(['Deaths', 'My Counter', 'Deaths']);
+  const reads: string[] = [];
+  for (let cycle = 0; cycle < 4; cycle++) {
+    do {
+      const command = run.nextCommand();
+      if (command.startsWith('getcustomvariablevalue ')) reads.push(command);
+      run.receive(command, ' 42 ');
+    } while (run.nextDelay() === 0);
+    t.mock.timers.tick(run.nextDelay());
+  }
+  assert.deepEqual(reads, ['getcustomvariablevalue Deaths', 'getcustomvariablevalue My Counter', 'getcustomvariablevalue Deaths', 'getcustomvariablevalue My Counter']);
+  assert.equal(run.values.get('getcustomvariablevalue Deaths'), ' 42 ');
+  run.receive('getcustomvariablevalue Deaths', '-');
+  assert.equal(run.values.has('getcustomvariablevalue Deaths'), false);
+  run.variables.clear();
+  do {
+    const command = run.nextCommand();
+    assert.ok(!command.startsWith('getcustomvariablevalue '));
+    run.receive(command, '-');
+  } while (run.nextDelay() === 0);
+});
+
 test('null timeouts clear stale values and back off unsupported commands', () => {
   const run = new RunReadout();
   run.receive('getgamename', 'Game');

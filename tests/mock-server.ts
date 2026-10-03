@@ -4,6 +4,7 @@ const responses: Record<string, string> = {
   getcurrenttime: '00:12:34.5600000', getcurrenttimerphase: 'Paused',
   getgamename: 'Celeste', getcategoryname: 'Any% · テスト表示',
   gettimingmethod: 'RealTime', getcomparisonname: 'Personal Best',
+  globalhotkeysenabled: 'True',
   getattemptcount: '42', getcompletedcount: '12', getsplitcount: '3', getsplitindex: '1',
   getcurrentsplitname: 'Old Site', getprevioussplitname: 'Forsaken City', getdelta: '-00:00:03.4500000',
   getcomparisonsplittime: '00:14:20', getlastsplittime: '00:05:23.4500000',

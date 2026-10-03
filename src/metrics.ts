@@ -1,5 +1,6 @@
 // Dedicated tags share the same field bindings as livesplit-value.
 export const metrics = {
+  'livesplit-hotkey-indicator': { field: 'hotkey-status', label: 'Global Hotkeys' },
   'livesplit-segment-timer': { field: 'segment-time', label: '区間タイマー' },
   'livesplit-previous-segment': { field: 'previous-segment-time', label: '直前の区間タイム' },
   'livesplit-live-segment': { field: 'live-segment-delta', label: '現在区間の差分' },

@@ -24,3 +24,12 @@ livesplit-splits .split-blank { height: var(--ls-blank-height, 2.6em); }
 livesplit-splits[data-two-rows="true"] tbody tr { display: flex; flex-wrap: wrap; }
 livesplit-splits[data-two-rows="true"] tbody th { flex: 0 0 100%; box-sizing: border-box; }
 livesplit-splits[data-two-rows="true"] tbody td { flex: 1; }
+/* Layout parts stay in light DOM so users can replace these styles. */
+livesplit-detailed-timer .ls-timer { font-size: var(--ls-timer-size, 5rem); color: var(--ls-accent, #67e8b0); }
+livesplit-detailed-timer .ls-timer, livesplit-detailed-timer .ls-segment-time, livesplit-detailed-timer dd { font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; }
+livesplit-detailed-timer .ls-fraction { font-size: .52em; }
+livesplit-detailed-timer .ls-segment-time { font-size: var(--ls-segment-size, 2rem); }
+livesplit-detailed-timer:not([data-state="connected"]) .ls-timer { color: var(--ls-muted, #82919f); }
+livesplit-detailed-timer .ls-comparison-times { margin: 1em 0 0; }
+livesplit-detailed-timer .ls-comparison-times > div, livesplit-text .ls-text { display: flex; justify-content: space-between; gap: 1em; overflow-wrap: anywhere; }
+livesplit-detailed-timer dd { margin: 0; white-space: nowrap; }

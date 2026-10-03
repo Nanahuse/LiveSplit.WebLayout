@@ -89,7 +89,7 @@ test('real LiveSplit: reads supplementary fields while tolerating unsupported co
         run.receive(command, value);
         if (command === 'getbestpossibletime') cycles.push(Date.now());
         if (!command.startsWith('getsplitname ')) seen.add(command);
-        if (cycles.length >= 20 && ['getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount', 'getbestpossibletime', 'getfinaltime'].every(field => seen.has(field))) finish();
+        if (cycles.length >= 20 && ['globalhotkeysenabled', 'getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount', 'getbestpossibletime', 'getfinaltime'].every(field => seen.has(field))) finish();
       },
     },
   });
@@ -97,6 +97,7 @@ test('real LiveSplit: reads supplementary fields while tolerating unsupported co
     client.start(); await done;
     assert.match(run.values.get('getcurrenttimerphase') ?? '', /^(NotRunning|Running|Paused|Ended)$/);
     assert.match(run.values.get('getsplitindex') ?? '', /^-?\d+$/);
+    assert.match(run.values.get('globalhotkeysenabled') ?? '', /^(true|false)$/i);
     for (const command of ['getpredictedtime', 'getcurrentrealtime', 'getcurrentgametime'] as const) {
       assert.ok(formatTime(run.values.get(command) ?? ''), `${command} should return a time`);
     }

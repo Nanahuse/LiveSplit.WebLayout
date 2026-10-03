@@ -9,13 +9,15 @@ const fastCommands: ReadCommand[] = [
   'getpredictedtime', 'getcurrentrealtime', 'getcurrentgametime',
   'gettimingmethod', 'getcomparisonname',
 ];
-const slowCommands: ReadCommand[] = ['getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount'];
+const slowCommands: ReadCommand[] = ['getgamename', 'getcategoryname', 'getattemptcount', 'getcompletedcount', 'getsplitcount', 'globalhotkeysenabled'];
 
 export class RunReadout {
   readonly history = new SplitHistory();
   readonly comparisons = new Comparisons();
   private readingComparisons = false;
   liveTime = '—';
+  variables = new Set<string>();
+  private variableCursor = 0;
   readonly values = new Map<ReadCommand, string>();
   readonly names = new Map<number, string>();
   private queue: { command: ReadCommand; comparison: boolean }[] = [];
@@ -34,14 +36,21 @@ export class RunReadout {
         .filter(command => splitCommands.includes(command) || (this.retryAfter.get(command) ?? 0) <= now)
         .map(command => ({ command, comparison: false }));
       this.queue.push(...this.comparisons.begin().map(command => ({ command, comparison: true })));
-      // At most one low-priority read per cycle: long split lists never block
-      // the next state snapshot. Each field has its own refresh deadline.
+      // Rotate one requested custom variable per fast cycle.
+      const variables = [...this.variables];
+      if (variables.length) {
+        const name = variables[this.variableCursor++ % variables.length];
+        const command: ReadCommand = `getcustomvariablevalue ${name}`;
+        if ((this.retryAfter.get(command) ?? 0) <= now) this.queue.push({ command, comparison: false });
+      }
+      // One low-priority read per cycle keeps long split lists from blocking
+      // the next snapshot. Each metadata field has its own refresh deadline.
       const names = Array.from({ length: this.count }, (_, i): ReadCommand => `getsplitname ${(this.slowCursor + i) % this.count}`);
       const slow: ReadCommand[] = [...slowCommands.slice(this.metadataCursor), ...slowCommands.slice(0, this.metadataCursor), ...names];
       for (let i = 0; i < slow.length; i++) {
         const command = slow[i];
         if (Math.max(this.refreshAt.get(command) ?? 0, this.retryAfter.get(command) ?? 0) > now) continue;
-        this.refreshAt.set(command, now + (command === 'getattemptcount' || command === 'getcompletedcount' ? 1000 : 5000));
+        this.refreshAt.set(command, now + (command === 'getattemptcount' || command === 'getcompletedcount' || command === 'globalhotkeysenabled' ? 1000 : 5000));
         this.queue.push({ command, comparison: false });
         if (command.startsWith('getsplitname ')) this.slowCursor = Number(command.slice('getsplitname '.length)) + 1;
         else this.metadataCursor = (slowCommands.indexOf(command) + 1) % slowCommands.length;
@@ -58,7 +67,7 @@ export class RunReadout {
   receive(command: ReadCommand, value: string | null) {
     if (this.readingComparisons) { this.readingComparisons = false; this.comparisons.receive(value); return; }
     this.history.receive(command, value);
-    const text = value?.trim();
+    const text = command.startsWith('getcustomvariablevalue ') ? value : value?.trim();
     if (value === null) {
       this.retryAfter.set(command, Date.now() + 60000);
       this.unavailable.add(command);
@@ -116,6 +125,7 @@ export function renderReadout(run: RunReadout, root: ParentNode) {
   const phase = get('getcurrenttimerphase');
   const summary = splitSummary(run);
   const phases: Record<string, string> = { NotRunning: '待機中', Running: '計測中', Paused: '一時停止', Ended: '完走' };
+  set('hotkey-status', ({ true: '有効', false: '無効' })[get('globalhotkeysenabled')?.toLowerCase() ?? ''] ?? '—');
   set('phase', phases[phase ?? ''] ?? '—');
   set('game', get('getgamename') ?? 'ゲーム情報未取得');
   set('category', get('getcategoryname') ?? 'カテゴリ情報未取得');

@@ -218,7 +218,51 @@ Current Pace・Real Time・Game Timeは補助情報の高速周期（目標100ms
 
 Sum of Bestは本体が生成したBest Segments比較を取得します。本体のSum of Bestコンポーネントが走行中の新記録を含めて再計算した値とは異なる場合があります。完走後の `getfinaltime` は実測値になるため、完走前の最後の比較値を保持します。完走後に初めて接続した場合や完走後に計測方法を切り替えた場合は「—」となります。
 
-## 接続先
+## 追加の表示パーツ
+
+### Detailed Timer・Text・Hotkey Indicator
+
+```html
+<livesplit-detailed-timer comparison1="Personal Best" comparison2="Best Segments"></livesplit-detailed-timer>
+<livesplit-hotkey-indicator label="グローバルホットキー"></livesplit-hotkey-indicator>
+<livesplit-text left="走行者" right="Player"></livesplit-text>
+<livesplit-text left="比較対象" right-field="comparison"></livesplit-text>
+<livesplit-text left="Deaths" right-variable="Deaths"></livesplit-text>
+```
+
+| パーツ | 内容・設定 |
+|---|---|
+| `livesplit-detailed-timer` | 全体タイマー・現在区間名・区間タイマー・2つの比較区間タイム。`comparison1` / `comparison2`で比較名を指定。既定はPersonal Best / Best Segments。`Current Comparison`も使用可能 |
+| `livesplit-hotkey-indicator` | グローバルホットキーの有効 / 無効。`globalhotkeysenabled`を約1秒間隔で取得。切り替え操作は行わない |
+| `livesplit-text` | `left` / `right`に任意のテキスト。`left-field` / `right-field`には上記field名を指定でき、固定テキストより優先 |
+
+固定Textは通信不要で、`data-state="static"`になります。Textの内容はHTMLとして解釈しません。Hotkey Indicatorは`field="hotkey-status"`でも使用可能です。
+
+Detailed Timerの比較欄は**比較の区間所要時間**で、走行中の差分ではありません。比較の累積値から直前区間の比較累積値を引いて表示します。取得できない基準や比較は「—」。開始前の全区間比較・区間アイコン・独立した計測方法指定は標準WSの制限により未対応です。サイズは`--ls-timer-size` / `--ls-segment-size`、比較欄は`.ls-comparison-times`で装飾できます。Textの本体独自変数構文の埋め込み展開には対応していません。
+
+TextのCustom Variableは `left-variable="変数名"` / `right-variable="変数名"` で指定します。変数名は大文字・小文字・空白を保持してサーバーへ送信します。空の名前・改行は設定エラーです。優先順はvariable、field、固定テキスト。未設定・空値・未対応サーバーは「—」で、サーバーの欠損値表現と同じ文字列「-」も区別できません。値はHTMLとして実行しません。
+
+変数は高速更新の一巡につき1件、重複を除いて順番に取得します。1変数なら目標100ms、N変数ならおおむねN×100msで各値を更新します（通信時間によって延びます）。表示を取り除くとその変数の定期取得も止まります。Auto Splitterなどが設定するRun MetadataのCustom Variableが対象で、本体Counterコンポーネント独自の値とは別です。
+
+### 公式コンポーネントとの対応範囲
+
+公式ソースの[コンポーネント一覧](https://github.com/LiveSplit/LiveSplit/tree/master/Components)と照合しています。グラフは対象外です。追加したパーツも含め、すべての公式設定・データを再現したものではありません。
+
+| 公式の表示 | このプロジェクトでの対応 |
+|---|---|
+| Timer / Splits / Detailed Timer | 同名のパーツ。データ・設定の制限は各項目参照 |
+| Current Comparison / Delta / Run Prediction / Sum of Best | `comparison` / `delta` / `current-pace` / `sum-of-best`。Sum of Bestの走行中再計算には制限あり |
+| Comparison Time | 現在区間は`comparison-time`、最終比較は`final-time`。後者は完走後に実測値へ変わるため公式と完全同一ではない |
+| Previous Segment | `previous-segment`は実測区間時間。公式の差分やPossible Time Saveの各表示モードは未対応 |
+| Text / Hotkey Indicator | 上記パーツ。TextはfieldまたはCustom Variable指定を利用 |
+| Title / Blank Space / Separator | 既存のゲーム名・回数パーツ、HTML・CSSで構成できるため専用タグを追加しない |
+| Possible Time Save / Total Playtime | 未実装。個別Best Segment・全区間比較・過去の試行時間など必要な情報が標準WSから取得できない |
+| Counter | 未実装。本体コンポーネント独自のカウンター値は標準WSで公開されていない。挑戦回数で代用しない |
+| Subsplits | 未実装。グループの集約に必要な全区間の比較・結果が取得できない |
+| World Record / Video | 未実装。外部ランキング連携や動画の同期・再生設定は別の実装が必要 |
+| Auto Splitting / Manual Game Time / Sound / Racetime / TheRun等 | 表示専用WSパーツの対象外（操作・自動計測・音声・外部サービス連携） |
+
+## 接続先の指定
 
 既定は `ws://localhost:16834/livesplit`。各パーツの `server` 属性で指定できます。属性がない場合はページURLの `?server=…`、次に既定値の順で使用します。別の接続先を指定したパーツは別の通信を使います。
 
