@@ -18,17 +18,17 @@ export function configureLayout(root: HTMLElement) {
   if (!['livesplit-text', 'livesplit-detailed-timer', 'livesplit-hotkey-indicator'].includes(root.localName)) return;
   const settings = presentation(root);
   if (root.localName === 'livesplit-hotkey-indicator') {
-    root.style.setProperty('--ls-hotkey-height', `${settings.IndicatorHeight}px`);
-    root.style.setProperty('--ls-hotkey-width', `${settings.IndicatorWidth}px`);
-    root.style.setProperty('--ls-hotkey-on', settings.HotkeysOnColor);
-    root.style.setProperty('--ls-hotkey-off', settings.HotkeysOffColor);
+    root.style.setProperty('--ls-setting-hotkey-height', `${settings.IndicatorHeight}px`);
+    root.style.setProperty('--ls-setting-hotkey-width', `${settings.IndicatorWidth}px`);
+    root.style.setProperty('--ls-setting-hotkey-on', settings.HotkeysOnColor);
+    root.style.setProperty('--ls-setting-hotkey-off', settings.HotkeysOffColor);
   }
   if (root.localName === 'livesplit-detailed-timer') {
     const name = root.querySelector<HTMLElement>('.ls-segment-name'); if (name) name.hidden = !settings.ShowSplitName;
     const second = root.querySelector<HTMLElement>('[data-comparison-value="2"]')?.parentElement; if (second) second.hidden = settings.HideComparison;
-    root.style.setProperty('--ls-segment-ratio', `${settings.SegmentTimerSizeRatio / 100}`);
-    root.style.setProperty('--ls-decimal-size', `${settings.DecimalsSize / 100}em`);
-    root.style.setProperty('--ls-segment-decimal-size', `${settings.SegmentTimerDecimalsSize / 100}em`);
+    root.style.setProperty('--ls-setting-segment-ratio', `${settings.SegmentTimerSizeRatio / 100}`);
+    root.style.setProperty('--ls-setting-decimal-size', `${settings.DecimalsSize / 100}em`);
+    root.style.setProperty('--ls-setting-segment-decimal-size', `${settings.SegmentTimerDecimalsSize / 100}em`);
   }
   if (root.localName === 'livesplit-text') {
     root.dataset.twoRows = String(settings.Display2Rows);

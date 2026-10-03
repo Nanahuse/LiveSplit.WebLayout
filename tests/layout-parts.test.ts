@@ -29,6 +29,7 @@ test('detailed timer uses current comparison and native visibility and size sett
     const root = dom.document.createElement('livesplit-detailed-timer');
     root.innerHTML = layoutTemplates['livesplit-detailed-timer'];
     const element = root as unknown as HTMLElement;
+    root.style.setProperty('--ls-decimal-size', '.8em');
     configureLayout(element);
     assert.deepEqual(detailedComparisons(element), ['', 'Best Segments']);
     assert.ok(root.querySelector('.ls-segment-name')?.hasAttribute('hidden'));
@@ -36,7 +37,8 @@ test('detailed timer uses current comparison and native visibility and size sett
     configureLayout(element);
     assert.equal(root.querySelector('.ls-segment-name')?.hasAttribute('hidden'), false);
     assert.ok(root.querySelector('[data-comparison-value="2"]')?.parentElement?.hasAttribute('hidden'));
-    assert.equal(root.style.getPropertyValue('--ls-decimal-size'), '0.5em');
+    assert.equal(root.style.getPropertyValue('--ls-setting-decimal-size'), '0.5em');
+    assert.equal(root.style.getPropertyValue('--ls-decimal-size'), '.8em');
     assert.deepEqual(detailedComparisons(element), ['Average Segments', 'Best Segments']);
     root.setAttribute('settings', '{"DisplayIcon":true}');
     assert.throws(() => configureLayout(element), /未対応/);
@@ -90,4 +92,3 @@ test('text can switch from fields back to literals', async () => {
     assert.equal(root.querySelector('img'), null);
   } finally { await dom.happyDOM.close(); }
 });
-

@@ -25,6 +25,7 @@ class LiveSplitPart extends HTMLElement {
   private unsubscribe?: () => void;
   connectedCallback() {
     this.setAttribute('data-ls-part', '');
+    if (this.localName in metrics && this.localName !== 'livesplit-hotkey-indicator') this.setAttribute('data-ls-metric', '');
     if (!this.children.length) this.innerHTML = templates[this.localName as keyof typeof templates];
     this.bind();
   }
