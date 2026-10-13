@@ -326,7 +326,15 @@ Sum of BestはRunStateのBest Segments比較の最終値を表示します。完
 
 固定Textは通信不要で、`data-state="static"`になります。Textの内容はHTMLとして解釈しません。Hotkey Indicatorは`field="hotkey-status"`でも使用可能です。
 
-Detailed Timerの比較欄は比較の区間所要時間です。Best SegmentsはBridgeの個別Best Segmentを表示します。取得できない時間は「—」。時計のサイズは`--ls-timer-size` / `--ls-segment-size`、比較欄は`.ls-comparison-times`で装飾できます。
+Detailed Timerの比較欄は比較の区間所要時間です。待機中は最初の区間、走行中は現在区間、完走後は最終区間の参照値を表示します。Best SegmentsはBridgeの個別Best Segmentを直接表示し、累積比較値から推測しません。未設定の時間は「—」。現在区間名・比較累積タイムも待機中から最初の区間を表示します。時計のサイズは`--ls-timer-size` / `--ls-segment-size`、比較欄は`.ls-comparison-times`で装飾できます。
+
+Splitsで開始前・未到達区間の個別Best Segmentを表示するには次の列を指定します。`Segment Delta`は実測との差分のため、開始前は空欄です。`Comparison Time`はBest Segmentsの累積比較値です。
+
+```html
+<livesplit-splits columns='[{"Name":"Best Segment","Type":"Segment Time","Comparison":"Best Segments"},{"Name":"PB","Type":"Split Time","Comparison":"Personal Best"}]'></livesplit-splits>
+```
+
+完了区間の`Segment Time`は今回の実測区間時間に切り替わります。比較値や個別Best Segmentの変更はRun変更イベントで再描画します。
 
 TextのCustom Variableは `left-variable="変数名"` / `right-variable="変数名"` で指定します。変数名は大文字・小文字・空白を保持してContextStateから参照します。空の名前・改行は設定エラーです。優先順はvariable、field、固定テキスト。未設定は「—」、空文字と「-」は値のまま表示します。値はHTMLとして実行しません。
 

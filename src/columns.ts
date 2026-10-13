@@ -78,11 +78,8 @@ export function columnValue(run: RunReadout, index: number, column: Column, live
   const previous = snapshot?.previousTime;
   if (completed) value = actual !== null && previous != null ? actual - previous : null;
   else {
-    if (snapshot?.segmentTarget !== undefined) return { value: snapshot.segmentTarget, delta: false };
-    // Adjacent comparison cumulative times define a comparison segment.
-    const previousTarget = index === 0 ? 0 : run.comparisons.rows.get(index - 1)?.get(comparison)?.target
-      ?? (previous != null && snapshot?.previousDelta != null ? previous - snapshot.previousDelta : null);
-    value = target !== null && previousTarget != null ? target - previousTarget : null;
+    value = (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
+      ? run.bestSegments.get(index) ?? null : snapshot?.segmentTarget ?? null;
   }
   return { value, delta: false };
 }

@@ -11,13 +11,12 @@ export class RunReadout {
   liveTime = '—';
   readonly values = new Map<ReadField, string>();
   readonly names = new Map<number, string>();
-  readonly unavailable = new Set<ReadField>();
   readonly methods = new Map<string, RunReadout>();
   readonly bestSegments = new Map<number, number | null>();
-  bridge = false;
   attemptFresh = true;
   get count(): number { return Number(this.values.get('getsplitcount') ?? 0); }
-  clear() { this.history.clear(); this.comparisons.clear(); this.values.clear(); this.names.clear(); this.methods.clear(); this.bestSegments.clear(); this.unavailable.clear(); this.liveTime = '—'; }
+  clear() { this.history.clear(); this.comparisons.clear(); this.values.clear(); this.names.clear(); this.methods.clear(); this.bestSegments.clear(); this.liveTime = '—'; }
+  get referenceIndex() { return this.history.phase === 'Ended' ? this.history.index - 1 : Math.max(0, this.history.index); }
 }
 
 export function displayTime(value?: string, delta = false): string {
@@ -32,7 +31,7 @@ export function splitSummary(run: RunReadout) {
   const waiting = phase === 'NotRunning';
   const ended = phase === 'Ended';
   return {
-    current: waiting ? '開始待ち' : ended ? 'すべての区間が終了' : run.values.get('getcurrentsplitname') ?? '—',
+    current: waiting ? run.names.get(0) ?? '開始待ち' : ended ? 'すべての区間が終了' : run.values.get('getcurrentsplitname') ?? '—',
     previous: waiting ? '—' : run.values.get('getprevioussplitname') ?? '—',
     progress: run.count ? `${ended ? run.count : Math.max(0, Math.min(index, run.count))} / ${run.count} 区間終了`
       : waiting ? '開始待ち' : ended ? '完走' : index >= 0 ? `第 ${index + 1} 区間` : '取得待ち',

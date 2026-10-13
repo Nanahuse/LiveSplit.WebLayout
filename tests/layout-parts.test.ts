@@ -64,7 +64,7 @@ test('detailed comparison times need a baseline and preserve segment references 
     run.comparisons.rows.set(2, new Map([['Personal Best', { target: 100, previousDelta: null }]]));
     renderDetailed(run, element);
     assert.equal(root.querySelector('[data-comparison-value="1"]')?.textContent, '—');
-    run.comparisons.rows.set(1, new Map([['Personal Best', { target: 70, previousDelta: 0 }]]));
+    run.comparisons.rows.get(2)!.get('Personal Best')!.segmentTarget = 30;
     renderDetailed(run, element);
     assert.equal(root.querySelector('[data-comparison-value="1"]')?.textContent, '0:30.00');
     run.history.phase = 'Ended'; run.history.index = 3;

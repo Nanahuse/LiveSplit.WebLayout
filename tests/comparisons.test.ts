@@ -4,6 +4,7 @@ import { Comparisons, comparisonNames } from '../src/comparisons.ts';
 
 function sample(c: Comparisons, index = 1, phase = 'Running') {
   c.phase = phase; c.index = index;
+  c.bestSegments.set(index, 30);
   if (phase === 'Running' || phase === 'Paused') c.rows.set(index, new Map([
     ['Personal Best', { target: 120, previousDelta: -10, previousTime: 60 }],
     ['Average Segments', { target: 140, previousDelta: -15, previousTime: 60 }],

@@ -4,7 +4,7 @@ import { Window } from 'happy-dom';
 import { create } from '@bufbuild/protobuf';
 import { metrics } from '../src/metrics.ts';
 import { fixture, FakeBridgeSocket, flush, ticks } from './bridge-fixture.ts';
-import { AttemptSegmentSchema, TimerPhase } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
+import { AttemptSegmentSchema, TimerPhase, BridgeEventType } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
 
 test('parts share binary Bridge connections, render full run and custom fields, then release sockets', async () => {
   const dom = new Window({ url: 'http://localhost/' });
@@ -49,6 +49,23 @@ test('parts share binary Bridge connections, render full run and custom fields, 
     sockets[0].event(data, 500n); await flush(); await flush();
     assert.equal(body.querySelector('strong')?.getAttribute('data-record'), 'pb');
     assert.equal(body.querySelector('.ls-timer')?.getAttribute('data-record'), 'pb');
+    data.timer.phase = TimerPhase.NOT_RUNNING; data.timer.splitIndex = -1; data.timer.realTimeTicks = 0n;
+    // Individual bests must not be reconstructed from cumulative Best Segments.
+    data.run.segments[0].bestSegmentTime!.realTimeTicks = ticks(40);
+    data.run.segments[2].bestSegmentTime!.realTimeTicks = ticks(35);
+    sockets[0].event(data, 501n, BridgeEventType.EVENT_RUN_CHANGED); await flush(); await flush();
+    assert.equal(body.querySelector('[data-comparison-value="1"]')?.textContent, '1:00.00');
+    assert.equal(body.querySelector('[data-comparison-value="2"]')?.textContent, '0:40.00');
+    assert.equal(text('livesplit-current-split'), 'First');
+    assert.equal(text('livesplit-comparison-time'), '1:00.00');
+    splits.setAttribute('columns', JSON.stringify([{ Type: 'Segment Time', Comparison: 'Best Segments' }]));
+    assert.equal(splits.querySelector('[data-split-index="2"] td')?.textContent, '0:35');
+    data.run.segments[2].bestSegmentTime!.realTimeTicks = ticks(34);
+    sockets[0].event(data, 502n, BridgeEventType.EVENT_RUN_CHANGED); await flush(); await flush();
+    assert.equal(splits.querySelector('[data-split-index="2"] td')?.textContent, '0:34');
+    data.run.segments[0].bestSegmentTime = undefined;
+    sockets[0].event(data, 503n, BridgeEventType.EVENT_RUN_CHANGED); await flush(); await flush();
+    assert.equal(body.querySelector('[data-comparison-value="2"]')?.textContent, '—');
     assert.equal(sockets.length, 2);
     body.innerHTML = ''; assert.ok(sockets.every(s => s.closed));
     body.innerHTML = '<livesplit-status server="ws://localhost:16834/livesplit"></livesplit-status>';

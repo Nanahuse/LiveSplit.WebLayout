@@ -5,7 +5,6 @@ export function comparisonNames(value: string | null): string[] {
 
 interface Comparison { target: number | null; previousDelta: number | null; previousTime?: number | null; segmentTarget?: number | null }
 export class Comparisons {
-  names = new Set<string>(['']);
   readonly rows = new Map<number, Map<string, Comparison>>();
   readonly bestSegments = new Map<number, number | null>();
   index = -1;
@@ -24,12 +23,11 @@ export class Comparisons {
     if (comparison?.target == null) return null;
     const delta = current - comparison.target;
     const best = this.rows.get(index)?.get('Best Segments');
-    // Best Segments supplies the reachable cumulative pace. Unlike the native
-    // helper, the server cannot expose the individual BestSegmentTime guard.
+    // Bridge supplies the individual best as well as the cumulative comparison.
     const segmentBest = this.bestSegments.get(index);
     const segmentTime = best?.previousTime == null ? null : current - best.previousTime;
     const beyondBest = best?.target != null && best.previousDelta != null && current - best.target > best.previousDelta
-      && (!this.bestSegments.has(index) || (segmentBest != null && segmentTime !== null && segmentTime > segmentBest));
+      && segmentBest != null && segmentTime !== null && segmentTime > segmentBest;
     const visible = (!segment && delta > 0) || beyondBest || (comparison.previousDelta != null && delta > comparison.previousDelta);
     return visible ? this.delta(index, name, current, segment) : null;
   }

@@ -15,11 +15,10 @@ export function recordStates(run: RunReadout) {
       if (i >= index) continue;
       const actual = row.time ? seconds(row.time) : null;
       const delta = actual === null ? null : run.comparisons.delta(i, 'Best Segments', actual, true);
-      // This is one of the native CheckBestSegment conditions. Missing individual
-      // BestSegmentTime is deliberately not treated as a first/new best.
+      // A known, unset individual best represents the first recorded segment.
       const bestTime = run.bestSegments.get(i);
       const baseline = run.comparisons.rows.get(i)?.get('')?.previousTime;
-      const newBest = run.bridge && run.attemptFresh && actual !== null && baseline != null
+      const newBest = run.attemptFresh && actual !== null && baseline != null
         && run.bestSegments.has(i) && (bestTime === null || (bestTime !== undefined && actual - baseline < bestTime));
       if (newBest || (delta !== null && delta < 0)) best.add(i);
     }

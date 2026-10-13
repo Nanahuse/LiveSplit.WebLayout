@@ -25,13 +25,15 @@ export function renderSplits(run: RunReadout, root: ParentNode) {
   if (!list || !(root instanceof HTMLElement)) return;
   const columns = columnsFor(root);
   const history = run.history;
-  const length = Math.max(run.count, ...[...history.rows.keys()].map(i => i + 1), 0);
+  const length = run.count;
   const settings = splitSettings(root);
   const indices = visibleSplits(length, history.index, settings.VisualSplitCount, settings.SplitPreviewCount, settings.AlwaysShowLastSplit);
   root.dataset.twoRows = String(settings.Display2Rows);
   root.dataset.separators = String(settings.ShowThinSeparators);
   const signature = JSON.stringify([settings, columns, indices, history.index, history.phase, length, [...run.names], [...history.rows],
-    [...run.comparisons.rows].map(([i, values]) => [i, [...values]])]);
+    [...run.comparisons.rows].map(([i, values]) => [i, [...values]]), [...run.bestSegments],
+    [...run.methods].map(([method, model]) => [method, [...model.history.rows], [...model.bestSegments],
+      [...model.comparisons.rows].map(([i, values]) => [i, [...values]])])]);
   if (list.dataset.signature === signature) { updateLiveSplits(run, root); return; }
   list.dataset.signature = signature;
   const table = list.closest('table');
@@ -82,7 +84,7 @@ export function renderSplits(run: RunReadout, root: ParentNode) {
   if (settings.SeparatorLastSplit && settings.AlwaysShowLastSplit && rows.length > 1) rows.at(-1)!.classList.add('last-split');
   if (!rows.length) {
     const row = document.createElement('tr'); const cell = document.createElement('td'); cell.colSpan = 1 + columns.length;
-    cell.className = 'splits-empty'; cell.textContent = '計測開始後、取得した区間をここに表示します。'; row.append(cell); rows.push(row);
+    cell.className = 'splits-empty'; cell.textContent = history.phase ? '区間が登録されていません。' : 'Bridgeから区間情報を取得しています。'; row.append(cell); rows.push(row);
   }
   list.replaceChildren(...rows);
 }

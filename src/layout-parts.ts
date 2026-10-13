@@ -59,18 +59,16 @@ export function renderDetailed(run: RunReadout, root: HTMLElement) {
   };
   writeClock(liveSeconds(run.liveTime), settings.DigitsFormat, settings.Accuracy, '[data-ls-field="whole"]', '[data-ls-field="fraction"]');
   writeClock(segmentMetrics(run).segment, settings.SegmentDigitsFormat, settings.SegmentAccuracy, '[data-segment-whole]', '[data-segment-fraction]');
-  const index = run.history.phase === 'Ended' ? run.history.index - 1 : run.history.index;
+  const index = run.referenceIndex;
   detailedComparisons(root).forEach((comparison, i) => {
     const label = root.querySelector(`[data-comparison-label="${i + 1}"]`);
     const element = root.querySelector(`[data-comparison-value="${i + 1}"]`);
     if (label) label.textContent = comparison || run.values.get('getcomparisonname') || 'Current Comparison';
     // The two reference rows remain comparison segment times even after finish.
     const snapshot = run.comparisons.rows.get(index)?.get(comparison);
-    const previous = index === 0 ? 0 : run.comparisons.rows.get(index - 1)?.get(comparison)?.target
-      ?? (snapshot?.previousTime != null && snapshot.previousDelta != null ? snapshot.previousTime - snapshot.previousDelta : null);
-    const value = run.bridge && (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
+    const value = (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
       ? run.bestSegments.get(index) ?? null
-      : snapshot?.target != null && previous != null ? snapshot.target - previous : null;
+      : snapshot?.segmentTarget ?? null;
     const time = clockParts(value, '1:23', { Seconds: '', Tenths: '.2', Hundredths: '.23' }[settings.SegmentTimesAccuracy]!);
     if (element) element.textContent = time.whole + time.fraction;
   });

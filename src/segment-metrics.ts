@@ -5,16 +5,8 @@ import { formatDelta, seconds } from './splits.ts';
 
 function previousTime(run: RunReadout, index: number): number | null {
   if (index === 0) return 0;
-  const row = run.comparisons.rows.get(index);
-  const snapshot = row?.values().next().value;
-  if (snapshot?.previousTime != null) return snapshot.previousTime;
-  // Only walk over explicitly observed skipped rows. Missing history is unknown.
-  for (let i = index - 1; i >= 0; i--) {
-    const previous = run.history.rows.get(i);
-    if (!previous) return null;
-    if (previous.time) return seconds(previous.time);
-  }
-  return 0;
+  // The Bridge adapter derives this from the complete current Attempt, including skips.
+  return run.comparisons.rows.get(index)?.get('')?.previousTime ?? null;
 }
 export function segmentMetrics(run: RunReadout) {
   if (!run.attemptFresh) return { segment: null, previous: null, delta: null };

@@ -20,7 +20,7 @@ function setTime(run: RunReadout, key: ReadField, value: number | null) {
 }
 
 function fill(run: RunReadout, snapshot: BridgeSnapshot, game: boolean) {
-  run.clear(); run.bridge = true; run.attemptFresh = snapshot.attemptFresh;
+  run.clear(); run.attemptFresh = snapshot.attemptFresh;
   const { timer, context } = snapshot;
   const phase = phaseNames[timer.phase] ?? '';
   const index = timer.phase === TimerPhase.NOT_RUNNING ? -1 : timer.splitIndex;
@@ -61,10 +61,10 @@ function fill(run: RunReadout, snapshot: BridgeSnapshot, game: boolean) {
     run.comparisons.rows.set(i, comparisons);
     if (result !== undefined) { previousActual = numeric(result); previousActualIndex = i; }
   }
-  set('getcurrentsplitname', run.names.get(index) ?? ''); set('getprevioussplitname', run.names.get(index - 1) ?? '');
+  set('getcurrentsplitname', run.names.get(run.referenceIndex) ?? ''); set('getprevioussplitname', run.names.get(index - 1) ?? '');
   const last = segments.at(-1)?.index ?? -1;
   const final = run.comparisons.rows.get(last)?.get('')?.target ?? null;
-  const currentTarget = run.comparisons.rows.get(index)?.get('')?.target ?? null;
+  const currentTarget = run.comparisons.rows.get(run.referenceIndex)?.get('')?.target ?? null;
   setTime(run, 'getcomparisonsplittime', currentTarget);
   setTime(run, 'getlastsplittime', index > 0 && snapshot.attemptFresh ? previousActual : null);
   const previousComparison = run.comparisons.rows.get(previousActualIndex)?.get('')?.target;
