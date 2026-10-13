@@ -201,6 +201,12 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 
 追加の `ComparisonTime` は比較累積タイムを固定表示、`LiveTime` は現在区間で走行中の累積時計、完了区間で確定タイムを表示します。本体の `Split Time` は走行中の時計ではないため、両者を区別しています。
 
+`ComparisonSegmentTime`（`Comparison Segment Time`も可）は比較区間タイムを常に表示するWeb版の拡張列です。`Comparison: "Best Segments"`ならBridgeの個別Best Segment、`Personal Best`などならその比較の区間タイムを表示します。区間完了・スキップ・完走後も今回の実測値には切り替わりません。Real Time／Game Timeの指定と列幅の設定にも対応します。未設定値は「—」です。
+
+```json
+{"Name":"Best Segment","Type":"Comparison Segment Time","Comparison":"Best Segments","Width":"7ch"}
+```
+
 `total-splits` は表示行数、`upcoming-splits` は先読み行数、`always-show-last-split` は最終区間の固定表示です。現在区間に合わせて表示範囲が移動します。省略時は本体既定の8行・先読み1行・最終区間固定です。
 
 本体の列種別・表示設定を参考にしています。Bridgeから全区間の比較値と現在Attemptを取得するため、未到達区間・途中接続時の比較値も表示します。設定は本体から自動インポートしません。アイコン・区間Custom Variable列・本体固有の装飾設定は今回の移行では追加していません。色やフォントはCSSで設定します。

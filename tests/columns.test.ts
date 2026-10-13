@@ -6,6 +6,7 @@ import type { ColumnType } from '../src/columns.ts';
 
 const element = (attrs: Record<string, string>) => ({ getAttribute: (name: string) => attrs[name] ?? null }) as Element;
 test('column widths accept explicit units and reject invalid dimensions', () => {
+  assert.equal(columnsFor(element({ columns: '[{"Type":"Comparison Segment Time","Comparison":"Best Segments"}]' }))[0].type, 'ComparisonSegmentTime');
   const widths = [100, '7ch', '25%', 'auto'];
   const root = element({ columns: JSON.stringify(widths.map(Width => ({ Type: 'Split Time', Width }))) });
   assert.deepEqual(columnsFor(root).map(c => c.width), ['100px', '7ch', '25%', 'auto']);

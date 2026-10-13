@@ -3,7 +3,7 @@ import type { RunReadout } from './readout.ts';
 import { seconds } from './splits.ts';
 import { nativeSettings } from './split-settings.ts';
 
-export const columnTypes = ['SplitTime', 'SegmentTime', 'Delta', 'SegmentDelta', 'DeltaorSplitTime', 'SegmentDeltaorSegmentTime', 'ComparisonTime', 'LiveTime'] as const;
+export const columnTypes = ['SplitTime', 'SegmentTime', 'Delta', 'SegmentDelta', 'DeltaorSplitTime', 'SegmentDeltaorSegmentTime', 'ComparisonTime', 'ComparisonSegmentTime', 'LiveTime'] as const;
 export type ColumnType = typeof columnTypes[number];
 export interface Column { name: string; type: ColumnType; comparison: string; timingMethod?: string; width?: string }
 function columnWidth(value: unknown): string | undefined {
@@ -73,6 +73,11 @@ export function columnValue(run: RunReadout, index: number, column: Column, live
     if (value !== null || !fallback) return { value, delta: true };
   }
   if (type === 'ComparisonTime') return { value: target, delta: false };
+  if (type === 'ComparisonSegmentTime') return {
+    value: (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
+      ? run.bestSegments.get(index) ?? null : snapshot?.segmentTarget ?? null,
+    delta: false,
+  };
   if (type === 'LiveTime') return { value: active ? now : actual, delta: false };
   if (!segment) return { value: completed ? actual : target, delta: false };
   const previous = snapshot?.previousTime;

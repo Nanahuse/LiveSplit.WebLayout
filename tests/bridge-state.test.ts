@@ -9,6 +9,23 @@ import { segmentMetrics } from '../src/segment-metrics.ts';
 import { AttemptSegmentSchema, TimerPhase, TimingMethod } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
 import { fixture, ticks } from './bridge-fixture.ts';
 
+test('fixed comparison segment columns retain references before and after completion', () => {
+  const s = fixture(), model = new RunReadout();
+  const best = { name: 'Best', type: 'ComparisonSegmentTime' as const, comparison: 'Best Segments' };
+  const pb = { ...best, comparison: 'Personal Best' };
+  for (const phase of [TimerPhase.NOT_RUNNING, TimerPhase.RUNNING, TimerPhase.PAUSED, TimerPhase.ENDED]) {
+    s.timer.phase = phase; s.timer.splitIndex = phase === TimerPhase.NOT_RUNNING ? -1 : phase === TimerPhase.ENDED ? 3 : 1;
+    applyBridgeSnapshot(model, s, 0);
+    assert.deepEqual(columnValue(model, 0, best, true), { value: 50, delta: false });
+    assert.equal(columnValue(model, 0, pb, true).value, 60);
+    assert.equal(columnValue(model, 0, { ...best, timingMethod: 'Game Time' }, true).value, 45);
+  }
+  // Missing actuals (skips) do not erase reference values; missing bests stay unknown.
+  assert.equal(columnValue(model, 1, best, true).value, 50);
+  s.run.segments[1].bestSegmentTime = undefined; applyBridgeSnapshot(model, s, 0);
+  assert.equal(columnValue(model, 1, best, true).value, null);
+});
+
 test('full snapshots populate future comparisons, restore attempt results and support independent methods', () => {
   const model = new RunReadout(), s = fixture(); applyBridgeSnapshot(model, s, 0);
   assert.equal(model.values.get('getgamename'), 'Game');
