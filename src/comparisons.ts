@@ -17,7 +17,7 @@ export class Comparisons {
     if (comparison?.target == null || (segment && comparison.previousDelta == null)) return null;
     return actual - comparison.target - (segment ? comparison.previousDelta! : 0);
   }
-  liveDelta(index: number, name: string, current: number, segment = false): number | null {
+  liveDelta(index: number, name: string, current: number, segment = false, showBestSegments = true): number | null {
     if (index !== this.index || !['Running', 'Paused'].includes(this.phase)) return null;
     const comparison = this.rows.get(index)?.get(name);
     if (comparison?.target == null) return null;
@@ -28,7 +28,7 @@ export class Comparisons {
     const segmentTime = best?.previousTime == null ? null : current - best.previousTime;
     const beyondBest = best?.target != null && best.previousDelta != null && current - best.target > best.previousDelta
       && segmentBest != null && segmentTime !== null && segmentTime > segmentBest;
-    const visible = (!segment && delta > 0) || beyondBest || (comparison.previousDelta != null && delta > comparison.previousDelta);
+    const visible = (!segment && delta > 0) || (showBestSegments && beyondBest) || (comparison.previousDelta != null && delta > comparison.previousDelta);
     return visible ? this.delta(index, name, current, segment) : null;
   }
   clear() { this.rows.clear(); this.bestSegments.clear(); this.sumOfBest = null; this.finalComparisonDelta = undefined; this.index = -1; this.phase = ''; }

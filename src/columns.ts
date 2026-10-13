@@ -3,7 +3,7 @@ import type { RunReadout } from './readout.ts';
 import { seconds } from './splits.ts';
 import { nativeSettings } from './split-settings.ts';
 
-export const columnTypes = ['SplitTime', 'SegmentTime', 'Delta', 'SegmentDelta', 'DeltaorSplitTime', 'SegmentDeltaorSegmentTime', 'ComparisonTime', 'ComparisonSegmentTime', 'LiveTime'] as const;
+export const columnTypes = ['SplitTime', 'SegmentTime', 'Delta', 'SegmentDelta', 'DeltaorSplitTime', 'SegmentDeltaorSegmentTime', 'CustomVariable', 'ComparisonTime', 'ComparisonSegmentTime', 'LiveTime'] as const;
 export type ColumnType = typeof columnTypes[number];
 export interface Column { name: string; type: ColumnType; comparison: string; timingMethod?: string; width?: string }
 function columnWidth(value: unknown): string | undefined {
@@ -46,15 +46,20 @@ export function liveSeconds(time: string): number | null {
     ? parts.reduce((total, part) => total * 60 + part, 0) * (time.startsWith('-') ? -1 : 1) : null;
 }
 
-export function columnValue(run: RunReadout, index: number, column: Column, live: boolean): { value: number | null; delta: boolean } {
-  const { type, comparison } = column;
+export function columnValue(run: RunReadout, index: number, column: Column, live: boolean, showBestSegments = true): { value: number | null; delta: boolean; text?: string } {
+  const { type } = column;
+  if (type === 'CustomVariable') return { value: null, delta: false, text: index < run.history.index
+    ? run.segmentVariables.get(index)?.[column.name] ?? ''
+    : index === run.history.index ? run.values.get(`getcustomvariablevalue ${column.name}`) ?? '' : '' };
   const method = column.timingMethod;
   if (method && method !== 'Current Timing Method' && method.replace(' ', '') !== run.values.get('gettimingmethod')) {
     const other = run.methods.get(method.replace(' ', ''));
-    if (other) return columnValue(other, index, { ...column, timingMethod: 'Current Timing Method' }, live);
+    if (other) return columnValue(other, index, { ...column, timingMethod: 'Current Timing Method' }, live, showBestSegments);
   }
   if (method && method !== 'Current Timing Method' && method.replace(' ', '') !== run.values.get('gettimingmethod')) return { value: null, delta: type.includes('Delta') };
-  const snapshot = run.comparisons.rows.get(index)?.get(comparison);
+  const row = run.comparisons.rows.get(index);
+  const comparison = row?.has(column.comparison) ? column.comparison : '';
+  const snapshot = row?.get(comparison);
   const target = snapshot?.target ?? null;
   const actualText = run.history.rows.get(index)?.time;
   const actual = actualText ? seconds(actualText) : null;
@@ -68,7 +73,7 @@ export function columnValue(run: RunReadout, index: number, column: Column, live
   if (isDelta) {
     if (completed && actual !== null) value = run.comparisons.delta(index, comparison, actual, segment);
     else if (active && live && now !== null && Number(run.values.get('getsplitindex')) === index && run.values.get('getcurrenttimerphase') === run.history.phase) {
-      value = run.comparisons.liveDelta(index, comparison, now, segment);
+      value = run.comparisons.liveDelta(index, comparison, now, segment, showBestSegments);
     }
     if (value !== null || !fallback) return { value, delta: true };
   }
@@ -83,8 +88,7 @@ export function columnValue(run: RunReadout, index: number, column: Column, live
   const previous = snapshot?.previousTime;
   if (completed) value = actual !== null && previous != null ? actual - previous : null;
   else {
-    value = (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
-      ? run.bestSegments.get(index) ?? null : snapshot?.segmentTarget ?? null;
+    value = snapshot?.segmentTarget ?? null;
   }
   return { value, delta: false };
 }

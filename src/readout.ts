@@ -13,9 +13,10 @@ export class RunReadout {
   readonly names = new Map<number, string>();
   readonly methods = new Map<string, RunReadout>();
   readonly bestSegments = new Map<number, number | null>();
+  readonly segmentVariables = new Map<number, Record<string, string>>();
   attemptFresh = true;
   get count(): number { return Number(this.values.get('getsplitcount') ?? 0); }
-  clear() { this.history.clear(); this.comparisons.clear(); this.values.clear(); this.names.clear(); this.methods.clear(); this.bestSegments.clear(); this.liveTime = '—'; }
+  clear() { this.history.clear(); this.comparisons.clear(); this.values.clear(); this.names.clear(); this.methods.clear(); this.bestSegments.clear(); this.segmentVariables.clear(); this.liveTime = '—'; }
   get referenceIndex() { return this.history.phase === 'Ended' ? this.history.index - 1 : Math.max(0, this.history.index); }
 }
 

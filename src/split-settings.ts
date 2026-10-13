@@ -3,6 +3,7 @@ export const splitDefaults = {
   ShowBlankSplits: true, LockLastSplit: true, SeparatorLastSplit: true,
   ShowThinSeparators: true, ShowColumnLabels: false, Display2Rows: false,
   SplitTimesAccuracy: 'Seconds', DeltasAccuracy: 'Tenths', DropDecimals: true,
+  ShowBestSegments: true,
 };
 export type SplitSettings = typeof splitDefaults;
 export function nativeSettings(root: Element): Record<string, unknown> {

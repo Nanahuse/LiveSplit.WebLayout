@@ -19,7 +19,7 @@ function fixture() {
   run.history.index = 1; run.history.phase = 'Running';
   run.values.set('getsplitindex', '1'); run.values.set('getcurrenttimerphase', 'Running');
   run.comparisons.index = 1; run.comparisons.phase = 'Running';
-  run.comparisons.rows.set(1, new Map([['Best Segments', { target: 80, previousDelta: 10, previousTime: 60 }]]));
+  run.comparisons.rows.set(1, new Map([['Best Segments', { target: 80, previousDelta: 10, previousTime: 60, segmentTarget: 30 }]]));
   run.bestSegments.set(1, 30); run.comparisons.bestSegments.set(1, 30);
   run.liveTime = '1:29.00';
   return run;

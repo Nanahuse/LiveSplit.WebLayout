@@ -184,7 +184,7 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 }'></livesplit-splits>
 ```
 
-`Type` は本体の表示名（`Split Time`、`Segment Delta or Segment Time`など）をそのまま使用できます。`Current Comparison` は本体で選択中の比較です。比較名は変更せず送信します。本体同様、区間系の列で `Best Split Times` を指定すると `Current Comparison` に戻します。
+`Type` は本体の表示名（`Split Time`、`Segment Delta or Segment Time`など）をそのまま使用できます。`Current Comparison` は本体で選択中の比較です。Runに存在しない比較名は本体同様に選択中の比較へ戻します。区間系の列で `Best Split Times` を指定すると `Current Comparison` に戻します。
 
 `TimingMethod` は `Current Timing Method` / `Real Time` / `Game Time`。Bridgeが両方式の比較・実測値を提供するため、各列で独立に指定できます。未設定のGame TimeはReal Timeに置き換えず「—」で表示します。
 
@@ -198,6 +198,15 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 | `SegmentDelta` | Segment Delta | 条件成立後の区間差分 | 確定した区間差分 |
 | `DeltaorSplitTime` | Delta or Split Time | 累積差分、未表示なら比較タイム | 累積差分、欠損なら今回のタイム |
 | `SegmentDeltaorSegmentTime` | Segment Delta or Segment Time | 区間差分、未表示なら比較区間タイム | 区間差分、欠損なら今回の区間タイム |
+| `CustomVariable` | Custom Variable | 現在区間のみ現在の変数値、未到達区間は空欄 | Split時の変数値。未設定は空欄 |
+
+`Custom Variable`は公式と同様に列の`Name`を変数名として使います（例：`{"Name":"Deaths","Type":"Custom Variable"}`）。HTMLとしては解釈しません。開始前はすべて空欄です。
+
+公式の`Segment Time`は、Best Segmentsを含むどの比較でも直前の有効な累積比較値との差です。比較値が欠けた区間は遡って計算します。完了区間の区間差分は、実測値と比較値の両方がある直前の区間を基準にします。スキップ区間の確定値は「—」です。
+
+`ShowBestSegments`（既定true）は本体のLayout設定に相当する指定です。このWeb版ではSplitsの`settings`に置き、Best Segment超過によるライブ差分開始と、完了した差分列のBest Segment色を制御します。通常の時間列・Custom Variable列は記録色にしません。
+
+列の表示分岐は公式の[SplitComponent.UpdateColumn](https://github.com/LiveSplit/LiveSplit.Splits/blob/master/src/LiveSplit.Splits/UI/Components/SplitComponent.cs)、差分計算は[LiveSplitStateHelper](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Model/LiveSplitStateHelper.cs)と照合しています。
 
 追加の `ComparisonTime` は比較累積タイムを固定表示、`LiveTime` は現在区間で走行中の累積時計、完了区間で確定タイムを表示します。本体の `Split Time` は走行中の時計ではないため、両者を区別しています。
 
@@ -209,7 +218,7 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 
 `total-splits` は表示行数、`upcoming-splits` は先読み行数、`always-show-last-split` は最終区間の固定表示です。現在区間に合わせて表示範囲が移動します。省略時は本体既定の8行・先読み1行・最終区間固定です。
 
-本体の列種別・表示設定を参考にしています。Bridgeから全区間の比較値と現在Attemptを取得するため、未到達区間・途中接続時の比較値も表示します。設定は本体から自動インポートしません。アイコン・区間Custom Variable列・本体固有の装飾設定は今回の移行では追加していません。色やフォントはCSSで設定します。
+Bridgeから全区間の比較値と現在Attemptを取得するため、未到達区間・途中接続時の比較値も表示します。設定は本体から自動インポートしません。アイコン・本体固有の装飾設定は未対応です。色やフォントはCSSで設定します。
 
 ### Splitsの枠・列幅・余白
 
@@ -337,7 +346,7 @@ Detailed Timerの比較欄は比較の区間所要時間です。待機中は最
 Splitsで開始前・未到達区間の個別Best Segmentを表示するには次の列を指定します。`Segment Delta`は実測との差分のため、開始前は空欄です。`Comparison Time`はBest Segmentsの累積比較値です。
 
 ```html
-<livesplit-splits columns='[{"Name":"Best Segment","Type":"Segment Time","Comparison":"Best Segments"},{"Name":"PB","Type":"Split Time","Comparison":"Personal Best"}]'></livesplit-splits>
+<livesplit-splits columns='[{"Name":"Best Segment","Type":"Comparison Segment Time","Comparison":"Best Segments"},{"Name":"PB","Type":"Split Time","Comparison":"Personal Best"}]'></livesplit-splits>
 ```
 
 完了区間の`Segment Time`は今回の実測区間時間に切り替わります。比較値や個別Best Segmentの変更はRun変更イベントで再描画します。

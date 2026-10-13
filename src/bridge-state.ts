@@ -37,10 +37,13 @@ function fill(run: RunReadout, snapshot: BridgeSnapshot, game: boolean) {
   const names = [...new Set([...snapshot.run.comparisons, ...segments.flatMap(segment => segment.comparisons.map(c => c.name))])];
   let previousActual: number | null = 0;
   let previousActualIndex = -1;
+  const previousTargets = new Map<string, number>();
+  const previousDeltas = new Map<string, number>();
   for (const segment of segments) {
     const i = segment.index;
     const result = snapshot.attemptFresh && i < index ? valueFor(results.get(i)?.splitTime, game) : undefined;
     run.names.set(i, segment.name);
+    if (snapshot.attemptFresh && i < index) run.segmentVariables.set(i, { ...results.get(i)?.customVariables });
     run.history.rows.set(i, { index: i, name: segment.name, time: result === undefined ? undefined : timeSpan(result) });
     run.bestSegments.set(i, numeric(valueFor(segment.bestSegmentTime, game)));
     run.comparisons.bestSegments.set(i, run.bestSegments.get(i)!);
@@ -48,15 +51,16 @@ function fill(run: RunReadout, snapshot: BridgeSnapshot, game: boolean) {
     for (const name of ['', ...names]) {
       const actualName = name || context.currentComparison;
       const target = numeric(valueFor(segment.comparisons.find(c => c.name === actualName)?.time, game));
-      const previousSegment = segments.find(s => s.index === previousActualIndex);
-      const previousTarget = previousActualIndex < 0 ? 0 : numeric(valueFor(previousSegment?.comparisons.find(c => c.name === actualName)?.time, game));
-      const adjacent = segments.find(s => s.index === i - 1);
-      const adjacentTarget = i === 0 ? 0 : numeric(valueFor(adjacent?.comparisons.find(c => c.name === actualName)?.time, game));
       comparisons.set(name, {
-        target, previousDelta: previousActual !== null && previousTarget !== null ? previousActual - previousTarget : null,
+        target, previousDelta: snapshot.attemptFresh ? previousDeltas.get(name) ?? 0 : null,
         previousTime: snapshot.attemptFresh ? previousActual : null,
-        segmentTarget: target !== null && adjacentTarget !== null ? target - adjacentTarget : null,
+        segmentTarget: target === null ? null : target - (previousTargets.get(name) ?? 0),
       });
+      // Native helpers skip missing comparisons, independently of missing actuals.
+      if (target !== null) {
+        previousTargets.set(name, target);
+        if (result !== undefined) previousDeltas.set(name, numeric(result)! - target);
+      }
     }
     run.comparisons.rows.set(i, comparisons);
     if (result !== undefined) { previousActual = numeric(result); previousActualIndex = i; }

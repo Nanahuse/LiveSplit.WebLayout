@@ -40,6 +40,10 @@ test('parts share binary Bridge connections, render full run and custom fields, 
     assert.equal(splits.querySelector('[data-split-index="2"] td')?.textContent, '2:50');
     assert.equal(splits.querySelectorAll('colgroup col')[1].getAttribute('style'), 'width: 7ch;');
     assert.equal(splits.querySelector('gt'), null);
+    splits.setAttribute('columns', JSON.stringify([{ Type: 'Custom Variable', Name: 'Deaths' }]));
+    assert.equal(splits.querySelector('[data-split-index="1"] td')?.textContent, '<b>42</b>');
+    assert.equal(splits.querySelector('td b'), null);
+    assert.equal(splits.querySelector('[data-split-index="2"] td')?.textContent, '');
     const best = body.querySelector('livesplit-best-possible-time')!;
     best.setAttribute('label', '<b>Best</b>'); best.setAttribute('hide-label', '');
     assert.equal(best.querySelector('.ls-label')?.textContent, '<b>Best</b>');
@@ -49,6 +53,11 @@ test('parts share binary Bridge connections, render full run and custom fields, 
     sockets[0].event(data, 500n); await flush(); await flush();
     assert.equal(body.querySelector('strong')?.getAttribute('data-record'), 'pb');
     assert.equal(body.querySelector('.ls-timer')?.getAttribute('data-record'), 'pb');
+    splits.setAttribute('columns', JSON.stringify([{ Type: 'Split Time' }, { Type: 'Delta' }, { Type: 'Custom Variable', Name: 'Deaths' }]));
+    const lastCells = splits.querySelectorAll('[data-split-index="2"] td');
+    assert.equal(lastCells[0].getAttribute('data-record'), '');
+    assert.equal(lastCells[1].getAttribute('data-timer-color'), 'ahead-gaining');
+    assert.equal(lastCells[2].getAttribute('data-record'), '');
     data.timer.phase = TimerPhase.NOT_RUNNING; data.timer.splitIndex = -1; data.timer.realTimeTicks = 0n;
     // Individual bests must not be reconstructed from cumulative Best Segments.
     data.run.segments[0].bestSegmentTime!.realTimeTicks = ticks(40);
@@ -58,7 +67,7 @@ test('parts share binary Bridge connections, render full run and custom fields, 
     assert.equal(body.querySelector('[data-comparison-value="2"]')?.textContent, '0:40.00');
     assert.equal(text('livesplit-current-split'), 'First');
     assert.equal(text('livesplit-comparison-time'), '1:00.00');
-    splits.setAttribute('columns', JSON.stringify([{ Type: 'Segment Time', Comparison: 'Best Segments' }]));
+    splits.setAttribute('columns', JSON.stringify([{ Type: 'Comparison Segment Time', Comparison: 'Best Segments' }]));
     assert.equal(splits.querySelector('[data-split-index="2"] td')?.textContent, '0:35');
     data.run.segments[2].bestSegmentTime!.realTimeTicks = ticks(34);
     sockets[0].event(data, 502n, BridgeEventType.EVENT_RUN_CHANGED); await flush(); await flush();

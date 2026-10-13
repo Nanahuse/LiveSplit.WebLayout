@@ -5,12 +5,12 @@ import { columnsFor, columnValue, visibleSplits } from './columns.ts';
 import type { Column } from './columns.ts';
 
 function paint(cell: HTMLElement, run: RunReadout, index: number, column: Column, live: boolean, settings: SplitSettings) {
-  const { value, delta } = columnValue(run, index, column, live);
-  cell.textContent = value === null ? (delta && index >= run.history.index ? '' : '—') : splitNumber(value, delta, settings);
+  const { value, delta, text } = columnValue(run, index, column, live, settings.ShowBestSegments);
+  cell.textContent = text ?? (value === null ? (delta && index >= run.history.index ? '' : '—') : splitNumber(value, delta, settings));
   const unavailable = column.timingMethod && column.timingMethod !== 'Current Timing Method' && column.timingMethod.replace(' ', '') !== run.values.get('gettimingmethod') && !run.methods.has(column.timingMethod.replace(' ', ''));
   cell.title = unavailable ? 'この計測方法の比較値は未取得です' : '';
   cell.dataset.unavailable = unavailable ? 'timing-method' : '';
-  cell.dataset.sign = !delta || value === null ? '' : value < 0 ? 'ahead' : 'behind';
+  cell.dataset.sign = !delta || value === null || index >= run.history.index ? '' : value < 0 ? 'ahead' : 'behind';
 }
 export function updateLiveSplits(run: RunReadout, root: ParentNode) {
   if (!(root instanceof HTMLElement)) return;
@@ -31,7 +31,7 @@ export function renderSplits(run: RunReadout, root: ParentNode) {
   root.dataset.twoRows = String(settings.Display2Rows);
   root.dataset.separators = String(settings.ShowThinSeparators);
   const signature = JSON.stringify([settings, columns, indices, history.index, history.phase, length, [...run.names], [...history.rows],
-    [...run.comparisons.rows].map(([i, values]) => [i, [...values]]), [...run.bestSegments],
+    [...run.comparisons.rows].map(([i, values]) => [i, [...values]]), [...run.bestSegments], [...run.segmentVariables],
     [...run.methods].map(([method, model]) => [method, [...model.history.rows], [...model.bestSegments],
       [...model.comparisons.rows].map(([i, values]) => [i, [...values]])])]);
   if (list.dataset.signature === signature) { updateLiveSplits(run, root); return; }

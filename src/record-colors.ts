@@ -1,6 +1,7 @@
 import type { RunReadout } from './readout.ts';
 import { seconds } from './splits.ts';
-import { liveSeconds } from './columns.ts';
+import { liveSeconds, columnsFor, columnValue } from './columns.ts';
+import { splitSettings } from './split-settings.ts';
 
 // Field-only user templates are supported just like the built-in .ls-timer wrapper.
 export const timerColorTargets = '.ls-timer, [data-ls-field="time"], [data-ls-field="whole"], [data-ls-field="fraction"]';
@@ -68,8 +69,29 @@ export function renderRecordColors(run: RunReadout, root: HTMLElement, connected
     apply(element, state.pb ? 'pb' : '');
   }
   for (const element of root.querySelectorAll<HTMLElement>('[data-ls-field="previous-segment-time"]')) apply(element, state.best.has(state.last) ? 'bs' : '');
+  const columns = root.localName === 'livesplit-splits' ? columnsFor(root) : [];
+  const showBestSegments = root.localName === 'livesplit-splits' ? splitSettings(root).ShowBestSegments : true;
   for (const row of root.querySelectorAll<HTMLElement>('[data-split-index]')) {
     const index = Number(row.dataset.splitIndex);
-    for (const cell of row.querySelectorAll<HTMLElement>('td')) apply(cell, state.best.has(index) ? 'bs' : '');
+    for (const cell of row.querySelectorAll<HTMLElement>('td')) {
+      const column = columns[Number(cell.dataset.columnIndex)];
+      const model = column?.timingMethod && column.timingMethod !== 'Current Timing Method'
+        && column.timingMethod.replace(' ', '') !== run.values.get('gettimingmethod')
+        ? run.methods.get(column.timingMethod.replace(' ', '')) : run;
+      delete cell.dataset.timerColor;
+      const completedDelta = column?.type.includes('Delta') && model && index < model.history.index;
+      if (completedDelta) {
+        const value = columnValue(model, index, column, false);
+        if (value.delta && value.value !== null) {
+          const comparison = model.comparisons.rows.get(index)?.get(column.comparison) ?? model.comparisons.rows.get(index)?.get('');
+          const previous = comparison?.previousDelta;
+          const cumulative = !column.type.startsWith('Segment');
+          cell.dataset.timerColor = value.value <= 0
+            ? cumulative && previous != null && value.value > previous ? 'ahead-losing' : 'ahead-gaining'
+            : cumulative && previous != null && value.value < previous ? 'behind-gaining' : 'behind-losing';
+        }
+      }
+      apply(cell, showBestSegments && completedDelta && recordStates(model).best.has(index) ? 'bs' : '');
+    }
   }
 }
