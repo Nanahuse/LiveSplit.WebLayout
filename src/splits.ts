@@ -1,46 +1,11 @@
 import { formatTime } from './timer.ts';
-import type { ReadCommand } from './timer.ts';
-
-// Bracket each sample with index AND phase reads. Never attach a time to a
-// different segment if LiveSplit advances while the requests are in flight.
-export const splitCommands: ReadCommand[] = ['getcurrenttimerphase', 'getsplitindex',
-  'getcurrentsplitname', 'getprevioussplitname', 'getcomparisonsplittime', 'getlastsplittime',
-  'getsplitindex', 'getcurrenttimerphase'];
 export interface SplitRow { index: number; name?: string; time?: string; target?: string }
 
 export class SplitHistory {
   readonly rows = new Map<number, SplitRow>();
   index = -1;
   phase = '';
-  private position = 0;
-  private sample: string[] = [];
-
-  receive(command: ReadCommand, value: string | null) {
-    if (command !== splitCommands[this.position]) return;
-    this.sample.push(value ?? '');
-    if (++this.position < splitCommands.length) return;
-    const [phase, start, current, previous, target, time, end, endPhase] = this.sample;
-    this.position = 0; this.sample = [];
-    if (!phase || phase !== endPhase || start !== end || !/^-?\d+$/.test(start)) return;
-    const index = Number(start);
-    if (!Number.isSafeInteger(index) || index < -1 || index > 1000) return;
-    if (phase === 'NotRunning') { this.rows.clear(); this.index = -1; this.phase = phase; return; }
-    if (!['Running', 'Paused', 'Ended'].includes(phase) || index < 0) return;
-    // An undo invalidates this segment's old result and all later results.
-    if (index < this.index || (this.phase === 'Ended' && phase !== 'Ended')) {
-      for (const key of this.rows.keys()) if (key >= index) this.rows.delete(key);
-    }
-    this.index = index; this.phase = phase;
-    const validName = (name: string) => name && name !== '-' ? name : undefined;
-    const validTime = (value: string) => formatTime(value) ? value : undefined;
-    if (index > 0) {
-      const old = this.rows.get(index - 1);
-      this.rows.set(index - 1, { ...old, index: index - 1, name: validName(previous) ?? old?.name, time: validTime(time) });
-    }
-    if (phase !== 'Ended') this.rows.set(index, { index, name: validName(current), target: validTime(target) });
-  }
-
-  clear() { this.rows.clear(); this.index = -1; this.phase = ''; this.position = 0; this.sample = []; }
+  clear() { this.rows.clear(); this.index = -1; this.phase = ''; }
 }
 
 export function seconds(value: string): number | null {

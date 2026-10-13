@@ -1,22 +1,7 @@
 // LiveSplit uses the constant TimeSpan format: [-][d.]hh:mm:ss[.fffffff].
 export interface TimerDisplay { whole: string; fraction: string }
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
-export type ReadCommand = `getcustomvariablevalue ${string}` | 'globalhotkeysenabled' | 'getpredictedtime' | 'getcurrentrealtime' | 'getcurrentgametime' | 'getfinaltime Best Segments' | 'getgamename' | 'getcategoryname' | 'getcurrenttimerphase' | 'gettimingmethod' | 'getcomparisonname' | 'getattemptcount' | 'getcompletedcount' | 'getsplitcount' | 'getsplitindex' | 'getcurrentsplitname' | 'getprevioussplitname' | 'getcomparisonsplittime' | 'getlastsplittime' | 'getdelta' | 'getbestpossibletime' | 'getfinaltime' | `getsplitname ${number}` | `getcomparisonsplittime ${string}` | `getdelta ${string}`;
-export type TimerSocket = Pick<WebSocket, 'onopen' | 'onmessage' | 'onerror' | 'onclose' | 'send' | 'close'>;
-interface ConnectionOptions {
-  onTime: (time: TimerDisplay) => void;
-  onStatus: (status: ConnectionStatus) => void;
-  createSocket?: (address: string) => TimerSocket;
-  interval?: number;
-  timeout?: number;
-  retry?: number;
-  readout?: {
-    nextCommand: () => ReadCommand;
-    onResponse: (command: ReadCommand, value: string | null) => void;
-    nextDelay?: () => number;
-  };
-}
-
+export type ReadField = `getcustomvariablevalue ${string}` | 'globalhotkeysenabled' | 'getpredictedtime' | 'getcurrentrealtime' | 'getcurrentgametime' | 'getfinaltime Best Segments' | 'getgamename' | 'getcategoryname' | 'getcurrenttimerphase' | 'gettimingmethod' | 'getcomparisonname' | 'getattemptcount' | 'getcompletedcount' | 'getsplitcount' | 'getsplitindex' | 'getcurrentsplitname' | 'getprevioussplitname' | 'getcomparisonsplittime' | 'getlastsplittime' | 'getdelta' | 'getbestpossibletime' | 'getfinaltime' | `getsplitname ${number}` | `getcomparisonsplittime ${string}` | `getdelta ${string}`;
 export function formatTime(value: string): TimerDisplay | null {
   const match = /^(-)?(?:(\d+)\.)?(\d+):(\d{2}):(\d{2})(?:\.(\d{1,7}))?$/.exec(value.trim());
   if (!match || Number(match[4]) > 59 || Number(match[5]) > 59) return null;
@@ -30,116 +15,11 @@ export function formatTime(value: string): TimerDisplay | null {
 }
 
 export function getEndpoint(search: string): string {
-  const value = new URLSearchParams(search).get('server') ?? 'ws://localhost:16834/livesplit';
+  const value = new URLSearchParams(search).get('server') ?? 'ws://127.0.0.1:54000/bridge/v3/rpc';
   const url = new URL(value);
   if (!['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.hash) {
     throw new Error('接続先には ws:// または wss:// の WebSocket URL を指定してください。');
   }
+  if (!/\/bridge\/v3\/rpc$/.test(url.pathname) || url.search) throw new Error('Bridge v3 RPC URLを指定してください');
   return url.href;
-}
-
-// Only one request is in flight: responses contain no request ID or command name.
-export class TimerConnection {
-  private stopped = true;
-  private pending = false;
-  private socket: TimerSocket | null = null;
-  private deadline?: ReturnType<typeof setTimeout>;
-  private poll?: ReturnType<typeof setTimeout>;
-  private retryTimer?: ReturnType<typeof setTimeout>;
-  private readonly onTime: ConnectionOptions['onTime'];
-  private readonly onStatus: ConnectionOptions['onStatus'];
-  private readonly createSocket: NonNullable<ConnectionOptions['createSocket']>;
-  private readonly interval: number;
-  private readonly timeout: number;
-  private readonly retry: number;
-  private readonly readout?: ConnectionOptions['readout'];
-  private command?: ReadCommand;
-
-  constructor(private readonly url: string, { onTime, onStatus, createSocket = (address) => new WebSocket(address), interval = 33, timeout = 3000, retry = 2000, readout }: ConnectionOptions) {
-    this.onTime = onTime;
-    this.onStatus = onStatus;
-    this.createSocket = createSocket;
-    this.interval = interval;
-    this.timeout = timeout;
-    this.retry = retry;
-    this.readout = readout;
-  }
-
-  start() {
-    if (!this.stopped) return;
-    this.stopped = false;
-    this.connect();
-  }
-
-  private connect() {
-    if (this.stopped) return;
-    this.onStatus('connecting');
-    let socket: TimerSocket;
-    try { socket = this.createSocket(this.url); }
-    catch { this.reconnect(); return; }
-    this.socket = socket;
-    this.deadline = setTimeout(() => this.fail(socket), this.timeout);
-    socket.onopen = () => {
-      if (this.socket !== socket) return;
-      clearTimeout(this.deadline);
-      this.request(socket);
-    };
-    socket.onmessage = ({ data }) => {
-      if (this.socket !== socket || !this.pending) return;
-      this.pending = false;
-      clearTimeout(this.deadline);
-      if (this.readout && this.command) {
-        this.readout.onResponse(this.command, typeof data === 'string' ? data : null);
-      } else {
-        const time = typeof data === 'string' ? formatTime(data) : null;
-        if (!time) { this.fail(socket); return; }
-        this.onTime(time);
-      }
-      this.onStatus('connected');
-      const delay = this.readout?.nextDelay?.() ?? this.interval;
-      if (delay <= 0) this.request(socket);
-      else this.poll = setTimeout(() => this.request(socket), delay);
-    };
-    socket.onerror = socket.onclose = () => this.fail(socket);
-  }
-
-  private request(socket: TimerSocket) {
-    if (this.stopped || this.socket !== socket) return;
-    this.pending = true;
-    this.command = this.readout?.nextCommand();
-    this.deadline = setTimeout(() => this.fail(socket), this.timeout);
-    try { socket.send(this.command ?? 'getcurrenttime'); }
-    catch { this.fail(socket); }
-  }
-
-  private fail(socket: TimerSocket) {
-    if (this.socket !== socket) return;
-    if (this.pending && this.command) this.readout?.onResponse(this.command, null);
-    this.release();
-    this.reconnect();
-  }
-
-  private reconnect() {
-    if (this.stopped) return;
-    this.onStatus('disconnected');
-    this.retryTimer = setTimeout(() => this.connect(), this.retry);
-  }
-
-  private release() {
-    clearTimeout(this.deadline);
-    clearTimeout(this.poll);
-    clearTimeout(this.retryTimer);
-    this.pending = false;
-    const socket = this.socket;
-    this.socket = null;
-    if (socket) {
-      socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
-      socket.close();
-    }
-  }
-
-  stop() {
-    this.stopped = true;
-    this.release();
-  }
 }

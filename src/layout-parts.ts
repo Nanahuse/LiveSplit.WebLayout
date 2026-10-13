@@ -68,7 +68,9 @@ export function renderDetailed(run: RunReadout, root: HTMLElement) {
     const snapshot = run.comparisons.rows.get(index)?.get(comparison);
     const previous = index === 0 ? 0 : run.comparisons.rows.get(index - 1)?.get(comparison)?.target
       ?? (snapshot?.previousTime != null && snapshot.previousDelta != null ? snapshot.previousTime - snapshot.previousDelta : null);
-    const value = snapshot?.target != null && previous != null ? snapshot.target - previous : null;
+    const value = run.bridge && (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
+      ? run.bestSegments.get(index) ?? null
+      : snapshot?.target != null && previous != null ? snapshot.target - previous : null;
     const time = clockParts(value, '1:23', { Seconds: '', Tenths: '.2', Hundredths: '.23' }[settings.SegmentTimesAccuracy]!);
     if (element) element.textContent = time.whole + time.fraction;
   });

@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/Nanahuse/LiveSplit.Bridge",
+  "revision": "44b5e113b819f8aba449d495698251d7d60190c2",
+  "protocol": 3,
+  "files": [
+    "livesplit/bridge/v3/bridge.proto",
+    "livesplit/bridge/v3/common.proto",
+    "livesplit/bridge/v3/run.proto"
+  ]
+}

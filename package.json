@@ -10,12 +10,15 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
     "test": "tsx --test tests/*.test.ts",
-    "test:live": "tsx --test tests/live.integration.ts"
+    "test:live": "tsx --test tests/live.integration.ts",
+    "generate:protocol": "buf generate"
   },
   "engines": {
     "node": ">=22.12"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.73.0",
+    "@bufbuild/protoc-gen-es": "^2.16.0",
     "@types/node": "^26.6.4",
     "@types/ws": "^8.18.2",
     "happy-dom": "^20.14.5",
@@ -23,5 +26,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
     "ws": "^8.22.0"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.16.0"
   }
 }

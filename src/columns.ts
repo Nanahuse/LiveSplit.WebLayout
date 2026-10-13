@@ -49,6 +49,10 @@ export function liveSeconds(time: string): number | null {
 export function columnValue(run: RunReadout, index: number, column: Column, live: boolean): { value: number | null; delta: boolean } {
   const { type, comparison } = column;
   const method = column.timingMethod;
+  if (method && method !== 'Current Timing Method' && method.replace(' ', '') !== run.values.get('gettimingmethod')) {
+    const other = run.methods.get(method.replace(' ', ''));
+    if (other) return columnValue(other, index, { ...column, timingMethod: 'Current Timing Method' }, live);
+  }
   if (method && method !== 'Current Timing Method' && method.replace(' ', '') !== run.values.get('gettimingmethod')) return { value: null, delta: type.includes('Delta') };
   const snapshot = run.comparisons.rows.get(index)?.get(comparison);
   const target = snapshot?.target ?? null;
@@ -74,6 +78,7 @@ export function columnValue(run: RunReadout, index: number, column: Column, live
   const previous = snapshot?.previousTime;
   if (completed) value = actual !== null && previous != null ? actual - previous : null;
   else {
+    if (snapshot?.segmentTarget !== undefined) return { value: snapshot.segmentTarget, delta: false };
     // Adjacent comparison cumulative times define a comparison segment.
     const previousTarget = index === 0 ? 0 : run.comparisons.rows.get(index - 1)?.get(comparison)?.target
       ?? (previous != null && snapshot?.previousDelta != null ? previous - snapshot.previousDelta : null);

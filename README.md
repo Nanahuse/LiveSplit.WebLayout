@@ -1,6 +1,6 @@
 # LiveSplit.WebLayout
 
-LiveSplit内蔵WebSocketサーバーの情報を表示するHTMLパーツ集です。TypeScript + Viteで開発し、配布後はNode.js・npm・HTTPサーバーなしで利用できます。操作コマンドは送信しません。
+LiveSplit.Bridge Protocol v3を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・npmは不要です。配布物はlocalhostの静的HTTPサーバーから提供します。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。
 
 ## ビルドと配布
 
@@ -19,8 +19,17 @@ npm run build
 | `livesplit.css` | 任意の初期スタイル。編集・差し替え・省略可能 |
 | `index.html` | 全パーツの配置例。レイアウトやデザインはこのHTMLで編集 |
 | `timer.html` | OBS向けの透過タイマーだけの配置例 |
+| `serve.ps1` | Windows用loopback専用の静的HTTPサーバー |
 
-利用者には必要なHTMLとJS・CSSを同じフォルダーで渡します。LiveSplitで **Control → Start WS Server** を有効にし、HTMLをブラウザーで直接開いてください。OBSではブラウザソースの「ローカルファイル」でHTMLを選択します。`file://`での実動作は自動ブラウザーツールの制限により未検証です。通常のHTTP静的配信にも対応します。
+LiveSplitにProtocol v3対応のLiveSplit.Bridgeを追加して起動してください。RPCの既定接続先は `ws://127.0.0.1:54000/bridge/v3/rpc`、Eventsは同じポートの `/bridge/v3/events` です。
+
+Windowsでは配布したdistフォルダーで次を実行できます（Windows PowerShell標準機能のみ）。
+
+```powershell
+powershell -NoProfile -File .\serve.ps1
+```
+
+ブラウザー／OBSブラウザソースのURLには `http://127.0.0.1:8080/index.html` または `http://127.0.0.1:8080/timer.html` を指定します。別の静的HTTPサーバーも利用可能です。PowerShellスクリプトが組織ポリシー等で実行できない場合は許可された静的サーバーを使ってください。BridgeのOrigin制限のため **file://やOBSのローカルファイル指定は非対応** です。Origin制限は緩和しません。
 
 配布物を編集しても再ビルドは不要です。ただし次のビルドで `dist/` は置き換わるため、自分のレイアウトは別フォルダーに保存してください。従来の単一HTML配布から変更しています。JS・CSSも一緒に配置してください。
 
@@ -177,7 +186,7 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 
 `Type` は本体の表示名（`Split Time`、`Segment Delta or Segment Time`など）をそのまま使用できます。`Current Comparison` は本体で選択中の比較です。比較名は変更せず送信します。本体同様、区間系の列で `Best Split Times` を指定すると `Current Comparison` に戻します。
 
-`TimingMethod` は `Current Timing Method` / `Real Time` / `Game Time`。固定指定が本体の選択中方式と異なる場合、標準WSではその方式の区間比較値を取得できないため表示できません。セルに `data-unavailable="timing-method"` と説明を付け、別方式の数値を表示しません。
+`TimingMethod` は `Current Timing Method` / `Real Time` / `Game Time`。Bridgeが両方式の比較・実測値を提供するため、各列で独立に指定できます。未設定のGame TimeはReal Timeに置き換えず「—」で表示します。
 
 互換性のため従来の `columns` 配列と小文字のキーも受け付けます。`columns` 属性は `settings.Columns` より優先します。旧 `comparisons="Personal Best|Best Segments"` は従来の独自列セットを明示的に使う互換指定であり、公式互換の設定には使用しないでください。
 
@@ -194,7 +203,7 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 
 `total-splits` は表示行数、`upcoming-splits` は先読み行数、`always-show-last-split` は最終区間の固定表示です。現在区間に合わせて表示範囲が移動します。省略時は本体既定の8行・先読み1行・最終区間固定です。
 
-本体UIのSplits設定と [列の実装](https://github.com/LiveSplit/LiveSplit.Splits/blob/master/src/LiveSplit.Splits/UI/Components/SplitComponent.cs) を確認して上記の計算・切り替えを合わせています。ただし標準WSだけでは完全な機能等価にはなりません。未到達・接続前の全比較値、各列独立のReal Time / Game Time、個別Best Segment、アイコン、区間カスタム変数は未対応です。スキップした区間は直前の有効な基準を取得できた場合だけ計算し、欠損した履歴は推測しません。設定は本体から自動インポートしません。Custom Variable列・アイコン・本体固有の色設定は未対応です。色やフォントはCSSで設定してください。
+本体の列種別・表示設定を参考にしています。Bridgeから全区間の比較値と現在Attemptを取得するため、未到達区間・途中接続時の比較値も表示します。設定は本体から自動インポートしません。アイコン・区間Custom Variable列・本体固有の装飾設定は今回の移行では追加していません。色やフォントはCSSで設定します。
 
 ### Splitsの枠・列幅・余白
 
@@ -257,9 +266,9 @@ Splits表を独自に組む場合は、`tbody data-ls-field="splits"` と、列�
 
 Accuracyは `Seconds` / `Tenths` / `Hundredths` / `Milliseconds`。差分は本体と同様、1分未満なら `+1.2` のように表示し、ゼロにプラス記号を付けません。現在・未到達区間のDelta / Segment Deltaは表示条件が成立するまで空欄です。ライブ値の元タイマーは現在1/100秒精度のため、Milliseconds指定でもライブ差分にそれ以上の精度はありません。
 
-標準WebSocketは各区間の `BestSegmentTime` を直接公開していないため、Best Segmentsの現在比較タイムと直近の確定差分から到達ペースを判定します。本体の [CheckLiveDelta](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Model/LiveSplitStateHelper.cs) にある個別Best Segmentの追加条件までは再現できません。特に区間スキップ・欠損値がある場合、本体と表示開始のタイミングが異なることがあります。比較値がない場合は推測せず「—」です。
+Bridgeの個別Best SegmentとBest Segments比較を使ってライブ差分の開始条件を判定します。比較や必要な時間が未設定の場合は「—」です。
 
-比較値は現在区間にいる間に取得・保存します。標準WSには任意の区間の比較タイムを読むコマンドがないため、未到達区間や接続前に通過した区間の比較タイムは「—」になります。列を途中追加した場合も取得以降の区間が対象です。比較を増やすほど初回取得・区間切り替え後の更新に時間がかかります。
+比較値はRunStateから全区間まとめて取得します。列の途中追加や表示開始前の区間にも利用できます。列を増やしてもRPC件数は増えません。
 
 セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、`data-column-type` は上記のtypeです。現在区間のセルには `data-live-column`、行には `data-split-index` が付きます。列を装飾する例:
 
@@ -291,11 +300,11 @@ livesplit-splits [data-column="comparison-time"] { opacity: .65; }
 <livesplit-game-time></livesplit-game-time>
 ```
 
-区間タイマーは約33msのタイマー応答で更新します。区間開始点が不明な途中接続・取り逃した区間では「—」となります。記録したスキップ区間は直前の有効な区間までさかのぼって計算します。待機中は区間タイマー・区間差分とも「—」です。直前の**累積**タイムが必要なら従来の `livesplit-previous-split` を使用してください。
+区間タイマーはrequestAnimationFrameで更新します。Split/Skip/Undoイベントを受けると時計を即時更新し、Attempt再取得まで区間時間は「—」にします。取得後はスキップを含む直前の有効な累積タイムを基準に計算します。
 
-Current Pace・Real Time・Game Timeは補助情報の高速周期（目標100ms）で更新します。Game Timeが初期化されていない場合、標準サーバーはReal Timeを返すため、その値を表示します。
+Real Time・Game TimeはTimerStateを750ms周期で再同期し、Running中はperformance.now()で補間します。Game Timeが未初期化・未設定の場合は「—」、Game TimeだけPause中ならその時計は固定します。Current Paceは比較最終値と直前確定差分から計算します。
 
-Sum of Bestは本体が生成したBest Segments比較を取得します。本体のSum of Bestコンポーネントが走行中の新記録を含めて再計算した値とは異なる場合があります。完走後の `getfinaltime` は実測値になるため、完走前の最後の比較値を保持します。完走後に初めて接続した場合や完走後に計測方法を切り替えた場合は「—」となります。
+Sum of BestはRunStateのBest Segments比較の最終値を表示します。完走後の接続でも復元できます。本体の全Attempt履歴を使った走行中再計算とは異なる場合があります。Best Possible Timeは個別Best Segmentから計算し、現在区間がその値を超えた場合は現在経過時間を使います。全履歴を使う結合区間の最適化は未対応です。
 
 ## 追加の表示パーツ
 
@@ -312,16 +321,16 @@ Sum of Bestは本体が生成したBest Segments比較を取得します。本�
 | パーツ | 内容・設定 |
 |---|---|
 | `livesplit-detailed-timer` | 全体タイマー・現在区間名・区間タイマー・2つの比較区間タイム。`comparison1` / `comparison2`で比較名を指定。既定はCurrent Comparison / Best Segments。`Current Comparison`も使用可能 |
-| `livesplit-hotkey-indicator` | グローバルホットキーの状態を色付きの線で表示（有効は緑、無効は赤）。`show-text`で従来の文字表示も併用可能。`globalhotkeysenabled`を約1秒間隔で取得。切り替え操作は行わない |
+| `livesplit-hotkey-indicator` | v3にホットキー状態がないため「取得不可」。状態線は未知色 |
 | `livesplit-text` | `left` / `right`に任意のテキスト。`left-field` / `right-field`には上記field名を指定でき、固定テキストより優先 |
 
 固定Textは通信不要で、`data-state="static"`になります。Textの内容はHTMLとして解釈しません。Hotkey Indicatorは`field="hotkey-status"`でも使用可能です。
 
-Detailed Timerの比較欄は**比較の区間所要時間**で、走行中の差分ではありません。比較の累積値から直前区間の比較累積値を引いて表示します。取得できない基準や比較は「—」。開始前の全区間比較・区間アイコン・独立した計測方法指定は標準WSの制限により未対応です。サイズは`--ls-timer-size` / `--ls-segment-size`、比較欄は`.ls-comparison-times`で装飾できます。Textの本体独自変数構文の埋め込み展開には対応していません。
+Detailed Timerの比較欄は比較の区間所要時間です。Best SegmentsはBridgeの個別Best Segmentを表示します。取得できない時間は「—」。時計のサイズは`--ls-timer-size` / `--ls-segment-size`、比較欄は`.ls-comparison-times`で装飾できます。
 
-TextのCustom Variableは `left-variable="変数名"` / `right-variable="変数名"` で指定します。変数名は大文字・小文字・空白を保持してサーバーへ送信します。空の名前・改行は設定エラーです。優先順はvariable、field、固定テキスト。未設定・空値・未対応サーバーは「—」で、サーバーの欠損値表現と同じ文字列「-」も区別できません。値はHTMLとして実行しません。
+TextのCustom Variableは `left-variable="変数名"` / `right-variable="変数名"` で指定します。変数名は大文字・小文字・空白を保持してContextStateから参照します。空の名前・改行は設定エラーです。優先順はvariable、field、固定テキスト。未設定は「—」、空文字と「-」は値のまま表示します。値はHTMLとして実行しません。
 
-変数は高速更新の一巡につき1件、重複を除いて順番に取得します。1変数なら目標100ms、N変数ならおおむねN×100msで各値を更新します（通信時間によって延びます）。表示を取り除くとその変数の定期取得も止まります。Auto Splitterなどが設定するRun MetadataのCustom Variableが対象で、本体Counterコンポーネント独自の値とは別です。
+Custom VariableはContextStateに含まれ、Context変更イベントと750ms周期の再同期でまとめて更新します。本体Counterの内部カウンターとは別です。
 
 ### 公式コンポーネントとの対応範囲
 
@@ -335,50 +344,46 @@ TextのCustom Variableは `left-variable="変数名"` / `right-variable="変数�
 | Previous Segment | `previous-segment`は実測区間時間。公式の差分やPossible Time Saveの各表示モードは未対応 |
 | Text / Hotkey Indicator | 上記パーツ。TextはfieldまたはCustom Variable指定を利用 |
 | Title / Blank Space / Separator | 既存のゲーム名・回数パーツ、HTML・CSSで構成できるため専用タグを追加しない |
-| Possible Time Save / Total Playtime | 未実装。個別Best Segment・全区間比較・過去の試行時間など必要な情報が標準WSから取得できない |
-| Counter | 未実装。本体コンポーネント独自のカウンター値は標準WSで公開されていない。挑戦回数で代用しない |
-| Subsplits | 未実装。グループの集約に必要な全区間の比較・結果が取得できない |
+| Possible Time Save / Total Playtime | 今回は未追加。Possible Time Save用の基礎データは取得可能。全Attempt履歴はv3では取得不可 |
+| Counter | 内部カウンターはv3で公開されていないため未対応 |
+| Subsplits | 今回は未追加。全区間データはBridgeで取得可能 |
 | World Record / Video | 未実装。外部ランキング連携や動画の同期・再生設定は別の実装が必要 |
 | Auto Splitting / Manual Game Time / Sound / Racetime / TheRun等 | 表示専用WSパーツの対象外（操作・自動計測・音声・外部サービス連携） |
 
 ## 接続先の指定
 
-既定は `ws://localhost:16834/livesplit`。各パーツの `server` 属性で指定できます。属性がない場合はページURLの `?server=…`、次に既定値の順で使用します。別の接続先を指定したパーツは別の通信を使います。
+既定は `ws://127.0.0.1:54000/bridge/v3/rpc`。各パーツの `server` 属性で指定できます。属性がない場合はページURLの `?server=…`、次に既定値の順で使用します。別の接続先を指定したパーツは別の通信を使います。
 
 ```html
-<livesplit-timer server="ws://127.0.0.1:16834/livesplit"></livesplit-timer>
+<livesplit-timer server="ws://127.0.0.1:54000/bridge/v3/rpc"></livesplit-timer>
 ```
 
 従来の `overlay=1` の代わりに `timer.html`、またはタイマーパーツだけを配置したHTMLを使ってください。
 
-## データと互換性
+## 同期と復元
 
-- master対応版ではゲーム名・カテゴリ・全区間名を開始前から取得します。1.8.37など未対応のサーバーでは未取得項目は「—」、区間は取得できた範囲を表示します。
-- Splits表は接続中に取得した区間結果を記録します。比較差は比較累積タイムを事前取得できた区間のみ表示します。取り逃した区間は推測しません。
-- リセット・切断・再読み込み・最後のパーツ削除で履歴は消えます。区間巻き戻しでは該当区間以降の結果を消去します。
-- 計測方法や比較を走行中に切り替えた場合はページを再読み込みしてください。
-- タイマーはLiveSplitの計測方法に従い、取得間隔は応答後約33ms。ローカルで時刻を進める補間は行いません。
-- 区間状態・結果・比較タイム・差分・Best Possible Time・最終タイム・計測方法は100msを目標に一巡します。一巡内は応答後に待機時間を挟まず次を要求し、取得中の区間変更を検出する前後確認も維持します。
-- 試行回数・完走回数は1秒、ゲーム名・カテゴリ・区間数・各区間名は5秒を更新間隔の目安とします。接続直後は順次取得し、低頻度項目は高速更新の一巡につき最大1件に制限します。区間数が多い場合、区間名全体の取得・更新には5秒以上かかります。
-- 上記はスケジュール上の目標です。通信時間・ブラウザのタイマー制限・未応答時のタイムアウトにより遅れる場合があります。100ms以内に一巡できなかった場合は、完了後すぐ次の一巡を開始します。
-- 同じ接続先ごとにタイマーと補助情報の2接続を使用し、それぞれ同時リクエストは1件です。
-- ゲーム名など外部の文字列はHTMLとして解釈せずテキストとして表示します。
+- Eventsを先に接続し、RPCでTimer / Attempt / Run / Context / Completed Countを取得します。
+- 初期取得中・RPC待ちのイベントを世代番号で検出し、古い応答を破棄して再取得します。
+- Timerイベントは時計を即時反映し、Attemptと完走回数を再取得します。Runは初期接続とRun変更時に取得します。
+- RPCとEventsのどちらかが切断した場合、時計の補間を止め、両接続と全状態を再構築します。session_id変更やevent_sequenceの欠落・逆順も同じです。最初のイベント番号は任意です。
+- 64bit ID・sequence・ticksはProtobuf生成コードのbigintで保持します。描画時の数値変換のみ秒単位にします。
+- Timer/Contextは750ms周期で再同期します。補間は最後の取得から最大2秒に制限し、RPCタイムアウトで再接続します。
+- 全区間の比較・現在Attemptは復元可能です。過去すべてのAttempt履歴はv3にありません。
+- 複数LiveSplitは各パーツのserver属性でポートを分けます。同じ接続先はRPC/Eventsの2接続を共有します。
 
 ## 開発・検証
 
 ```sh
 npm run dev
+npm run generate:protocol
 npm run build
 npm test
 npm run test:live
 ```
 
-`test:live`は起動中のLiveSplitに対する読み取り専用テストです。接続先は環境変数 `LIVESPLIT_URL` で変更できます。`npx tsx tests/mock-server.ts` では固定データのテストサーバーを起動します。
+`test:live`は起動中のBridge v3への読み取り専用検証です。接続先は環境変数 `LIVESPLIT_URL` で変更できます。Start/Split/Reset等の操作RPCは送りません。`npx tsx tests/mock-server.ts` は54001番ポートのバイナリv3フィクスチャです。
 
-実装は `src/components.ts`（パーツ）、`src/session.ts`（共有接続）、`src/parts.css`（既定CSS）、`src/readout.ts` / `src/splits.ts`（表示・履歴）、`src/timer.ts`（通信）です。配置例はルートの `index.html` から出力されます。
-
-仕様: [LiveSplit公式README](https://github.com/LiveSplit/LiveSplit#the-livesplit-server)。サードパーティーのJSON形式WebSocketプラグインは対象外です。
-
+通信層は `src/bridge-client.ts`、表示モデルへの変換は `src/bridge-state.ts`、パーツは `src/components.ts`、共通CSSは `src/parts.css`。Protocolの正本は `proto/`、生成元の固定コミットは `proto/SOURCE.json`、生成コードは `src/generated/` です。生成にはbufとprotoc-gen-esを使い、配布JSにProtobufランタイムもバンドルします。
 
 ### 公式設定と表示の対応（Detailed Timer / Text / Hotkey Indicator）
 
@@ -401,7 +406,7 @@ npm run test:live
 
 Textの左右の色とフォントは`--ls-text-left-color` / `--ls-text-right-color` / `--ls-text-left-font` / `--ls-text-right-font`で指定できます。背景・グラデーション・影・配置は通常のCSSで指定します。Detailed Timerの区間名は`.ls-segment-name`、比較名は`dt`、比較値は`dd`で独立に装飾できます。
 
-区間アイコン・選択中と異なる計測方法の区間時計は未対応です。これらの完全な機能等価は保証しません。時計の取得精度は1/100秒のため、より細かい精度指定は受け付けません。
+区間アイコン・Detailed Timerで選択中と異なる計測方法を指定する機能は未対応です。Splitsの列ではReal TimeとGame Timeを個別指定できます。Bridgeの時刻は100ナノ秒単位で受信しますが、時計の表示精度は最大1/100秒です。
 
 ### PB・Best Segmentの色／レインボー
 
@@ -424,8 +429,8 @@ Timer、Detailed Timer、区間タイマー、直前区間タイム、Splitsの�
 | 直前区間タイム | 直前の確定区間がBSなら次の区間確定まで維持 |
 | Splits | BSを達成した完了行の数値セルを強調 |
 
-TimerのPB色は公式Timerと同様、完走時に**選択中の比較**より速い場合、またはその比較タイムが未設定の場合に表示します。完走後のgetdeltaを整合性確認付きで取得するため、完走後の接続でも判定可能です。未応答と比較未設定は区別します。同タイムはPB色にしません。BSは保存したBest Segments比較に対する**区間差分が負**の場合に判定します。BSは公式`CheckBestSegment`の条件の一つと同じです。ただし標準WSでは個別BestSegmentTimeを取得できないため、公式の「個別Best Segmentより速い」「まだ記録がない」条件は判定できません。BSは途中接続・初回記録・比較値欠損では記録色を付けない場合があります。
+TimerのPB色は完走時の選択中比較とAttemptの最終実測値から判定します。同タイムはPB色にしません。BSは個別Best Segmentの未設定・更新、またはBest Segmentsに対する区間差分が負の場合に判定します。
 
 PBのレインボーはこのWeb版の拡張です。以前のPersonal Best固定判定とBS直後2秒間のタイマー強調は、公式の挙動と異なるため廃止しました。リセット・切断・不整合な取得状態では効果を解除します。`data-record="pb|bs"`と`data-record-effect`で独自のCSS効果にも差し替えられます。
 
-Timerの状態色は公式の優先順位（待機／負の時計 → ポーズ → 完走 → 走行中）に従います。走行中は現在累積差分の正負と直前差分から先行・遅延／回復・悪化を判定します。色は`--ls-not-running-color`、`--ls-paused-color`、`--ls-ahead-gaining-color`、`--ls-ahead-losing-color`、`--ls-behind-gaining-color`、`--ls-behind-losing-color`で変更できます。WSの状態確認周期（目標100ms）に伴う遅延は残ります。
+Timerの状態色は公式の優先順位（待機／負の時計 → ポーズ → 完走 → 走行中）に従います。走行中は現在累積差分の正負と直前差分から先行・遅延／回復・悪化を判定します。色は`--ls-not-running-color`、`--ls-paused-color`、`--ls-ahead-gaining-color`、`--ls-ahead-losing-color`、`--ls-behind-gaining-color`、`--ls-behind-losing-color`で変更できます。イベント直後はAttempt取得が完了するまで記録色の反映を保留します。

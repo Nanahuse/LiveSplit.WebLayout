@@ -2,6 +2,9 @@ import type { RunReadout } from './readout.ts';
 import { seconds } from './splits.ts';
 import { liveSeconds } from './columns.ts';
 
+// Field-only user templates are supported just like the built-in .ls-timer wrapper.
+export const timerColorTargets = '.ls-timer, [data-ls-field="time"], [data-ls-field="whole"], [data-ls-field="fraction"]';
+
 export function recordStates(run: RunReadout) {
   const { index, phase } = run.history;
   const stable = run.values.get('getcurrenttimerphase') === phase && Number(run.values.get('getsplitindex')) === index
@@ -14,7 +17,11 @@ export function recordStates(run: RunReadout) {
       const delta = actual === null ? null : run.comparisons.delta(i, 'Best Segments', actual, true);
       // This is one of the native CheckBestSegment conditions. Missing individual
       // BestSegmentTime is deliberately not treated as a first/new best.
-      if (delta !== null && delta < 0) best.add(i);
+      const bestTime = run.bestSegments.get(i);
+      const baseline = run.comparisons.rows.get(i)?.get('')?.previousTime;
+      const newBest = run.bridge && run.attemptFresh && actual !== null && baseline != null
+        && run.bestSegments.has(i) && (bestTime === null || (bestTime !== undefined && actual - baseline < bestTime));
+      if (newBest || (delta !== null && delta < 0)) best.add(i);
     }
   }
   const current = liveSeconds(run.liveTime);
@@ -46,14 +53,14 @@ export function validateRecordEffects(root: Element) {
   }
 }
 export function renderRecordColors(run: RunReadout, root: HTMLElement, connected: boolean) {
-  if (!root.querySelector('.ls-timer, .ls-segment-time, [data-split-index], [data-ls-field="time"], [data-ls-field="segment-time"], [data-ls-field="previous-segment-time"]')) return;
+  if (!root.querySelector(`${timerColorTargets}, .ls-segment-time, [data-split-index], [data-ls-field="segment-time"], [data-ls-field="previous-segment-time"]`)) return;
   const state = recordStates(run);
   const apply = (element: HTMLElement, record: string) => {
     const effect = root.getAttribute(record === 'pb' ? 'pb-effect' : 'bs-effect') ?? 'color';
     element.dataset.record = connected ? record : '';
     element.dataset.recordEffect = connected && record ? effect : 'none';
   };
-  for (const element of root.querySelectorAll<HTMLElement>('.ls-timer, [data-ls-field="time"]')) {
+  for (const element of root.querySelectorAll<HTMLElement>(timerColorTargets)) {
     element.dataset.timerColor = connected ? state.timer : 'unknown';
     apply(element, state.pb ? 'pb' : '');
   }

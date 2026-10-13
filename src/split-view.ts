@@ -7,8 +7,8 @@ import type { Column } from './columns.ts';
 function paint(cell: HTMLElement, run: RunReadout, index: number, column: Column, live: boolean, settings: SplitSettings) {
   const { value, delta } = columnValue(run, index, column, live);
   cell.textContent = value === null ? (delta && index >= run.history.index ? '' : '—') : splitNumber(value, delta, settings);
-  const unavailable = column.timingMethod && column.timingMethod !== 'Current Timing Method' && column.timingMethod.replace(' ', '') !== run.values.get('gettimingmethod');
-  cell.title = unavailable ? 'この計測方法の比較値は標準WSから取得できません' : '';
+  const unavailable = column.timingMethod && column.timingMethod !== 'Current Timing Method' && column.timingMethod.replace(' ', '') !== run.values.get('gettimingmethod') && !run.methods.has(column.timingMethod.replace(' ', ''));
+  cell.title = unavailable ? 'この計測方法の比較値は未取得です' : '';
   cell.dataset.unavailable = unavailable ? 'timing-method' : '';
   cell.dataset.sign = !delta || value === null ? '' : value < 0 ? 'ahead' : 'behind';
 }

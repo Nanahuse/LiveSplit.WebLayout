@@ -57,12 +57,14 @@ class LiveSplitPart extends HTMLElement {
         this.dataset.state = 'static'; return;
       }
       const server = this.getAttribute('server');
+      if (location.protocol === 'file:') throw new Error('Bridge v3はfile://に接続を許可しません。localhostのHTTPサーバーで開いてください。');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
       if (this.localName === 'livesplit-splits') splitSettings(this);
-      const comparisons = this.localName === 'livesplit-splits' ? [...new Set(columnsFor(this).filter(c => c.type !== 'LiveTime').map(c => c.comparison))] : this.querySelector('[data-ls-field="live-segment-delta"]') ? [''] : [];
-      if (this.localName === 'livesplit-detailed-timer') comparisons.push(...detailedComparisons(this));
-      if (this.querySelector('.ls-timer, .ls-segment-time, [data-ls-field="time"], [data-ls-field="segment-time"]')) comparisons.push('');
-      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick), comparisons, textVariables(this));
+      // Validate settings; Bridge supplies all comparisons and variables together.
+      if (this.localName === 'livesplit-splits') columnsFor(this);
+      if (this.localName === 'livesplit-detailed-timer') detailedComparisons(this);
+      textVariables(this);
+      this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick));
     } catch (error) {
       this.dataset.state = 'error';
       for (const element of this.querySelectorAll('[data-ls-field], [data-ls-variable], [data-text-side]')) element.textContent = `設定エラー: ${error instanceof Error ? error.message : '接続先・列設定を確認してください'}`;
@@ -70,6 +72,7 @@ class LiveSplitPart extends HTMLElement {
   }
   private render(session: Session, tick: boolean) {
     this.dataset.state = session.status;
+    this.dataset.connectionMessage = session.message;
     const set = (field: string, value: string) => {
       for (const element of this.querySelectorAll(`[data-ls-field="${field}"]`)) element.textContent = value;
     };
@@ -83,6 +86,7 @@ class LiveSplitPart extends HTMLElement {
     set('status', { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[session.status]);
     set('endpoint', session.endpoint);
     renderReadout(session.run, this);
+    if (session.message) set('status', `再接続待ち: ${session.message}`);
     this.updateLabel();
     renderRecordColors(session.run, this, session.status === 'connected');
   }

@@ -17,6 +17,7 @@ function previousTime(run: RunReadout, index: number): number | null {
   return 0;
 }
 export function segmentMetrics(run: RunReadout) {
+  if (!run.attemptFresh) return { segment: null, previous: null, delta: null };
   const { index, phase } = run.history;
   const stable = Number(run.values.get('getsplitindex') ?? -1) === index && run.values.get('getcurrenttimerphase') === phase;
   const active = stable && ['Running', 'Paused'].includes(phase);

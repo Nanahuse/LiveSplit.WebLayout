@@ -80,3 +80,23 @@ test('PB and BS effects are independent and disconnected values lose their effec
     root.setAttribute('bs-effect', 'invalid'); assert.throws(() => validateRecordEffects(element));
   } finally { await dom.happyDOM.close(); }
 });
+
+test('field-only timer templates receive PB color without the default wrapper', async () => {
+  const dom = new Window();
+  try {
+    const root = dom.document.createElement('livesplit-timer');
+    root.innerHTML = '<strong data-ls-field="whole">0:14</strong><small data-ls-field="fraction">.17</small>';
+    const element = root as unknown as HTMLElement;
+    const run = fixture();
+    renderRecordColors(run, element, true);
+    for (const child of root.children) {
+      assert.equal(child.getAttribute('data-timer-color'), 'pb');
+      assert.equal(child.getAttribute('data-record-effect'), 'color');
+    }
+    root.setAttribute('pb-effect', 'rainbow'); renderRecordColors(run, element, true);
+    assert.equal(root.querySelector('strong')?.getAttribute('data-record-effect'), 'rainbow');
+    run.comparisons.finalComparisonDelta = 0; renderRecordColors(run, element, true);
+    assert.equal(root.querySelector('strong')?.getAttribute('data-timer-color'), 'behind-losing');
+    assert.equal(root.querySelector('strong')?.getAttribute('data-record'), '');
+  } finally { await dom.happyDOM.close(); }
+});
