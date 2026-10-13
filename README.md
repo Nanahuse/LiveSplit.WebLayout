@@ -298,7 +298,9 @@ livesplit-splits [data-column="comparison-time"] { opacity: .65; }
 | パーツ | `livesplit-value`のfield | 表示 |
 |---|---|---|
 | `livesplit-segment-timer` | `segment-time` | 現在区間の経過時間。完走後は最終区間の確定時間 |
-| `livesplit-previous-segment` | `previous-segment-time` | 直前に終了した区間の実測時間（累積ではない） |
+| `livesplit-previous-segment` | `previous-segment-delta` | 公式Previous Segment：直前区間の差分。条件成立時にLive Segmentへ切り替え |
+| `livesplit-previous-segment-time` | `previous-segment-time` | 直前に終了した区間の実測時間（累積ではない） |
+| `livesplit-possible-time-save` | `possible-time-save` | 現在区間、または残り区間合計の短縮可能時間 |
 | `livesplit-live-segment` | `live-segment-delta` | 選択中比較に対する現在区間の差分。Splitsと同じ表示開始条件 |
 | `livesplit-current-pace` | `current-pace` | `getpredictedtime`が返す現在の比較を使った完走予測 |
 | `livesplit-sum-of-best` | `sum-of-best` | Best Segments比較の最終累積タイム |
@@ -364,14 +366,38 @@ Custom VariableはContextStateに含まれ、Context変更イベントと750ms�
 | Timer / Splits / Detailed Timer | 同名のパーツ。データ・設定の制限は各項目参照 |
 | Current Comparison / Delta / Run Prediction / Sum of Best | `comparison` / `delta` / `current-pace` / `sum-of-best`。Sum of Bestの走行中再計算には制限あり |
 | Comparison Time | 現在区間は`comparison-time`、最終比較は`final-time`。後者は完走後に実測値へ変わるため公式と完全同一ではない |
-| Previous Segment | `previous-segment`は実測区間時間。公式の差分やPossible Time Saveの各表示モードは未対応 |
+| Previous Segment / Possible Time Save | 区間差分・Live Segment・短縮可能時間の併記・残り合計に対応。下記設定参照 |
 | Text / Hotkey Indicator | 上記パーツ。TextはfieldまたはCustom Variable指定を利用 |
 | Title / Blank Space / Separator | 既存のゲーム名・回数パーツ、HTML・CSSで構成できるため専用タグを追加しない |
-| Possible Time Save / Total Playtime | 今回は未追加。Possible Time Save用の基礎データは取得可能。全Attempt履歴はv3では取得不可 |
+| Total Playtime | 未実装。全Attempt履歴はv3では取得不可 |
 | Counter | 内部カウンターはv3で公開されていないため未対応 |
 | Subsplits | 今回は未追加。全区間データはBridgeで取得可能 |
 | World Record / Video | 未実装。外部ランキング連携や動画の同期・再生設定は別の実装が必要 |
 | Auto Splitting / Manual Game Time / Sound / Racetime / TheRun等 | 表示専用WSパーツの対象外（操作・自動計測・音声・外部サービス連携） |
+
+### Possible Time Save / Previous Segment
+
+```html
+<livesplit-possible-time-save settings='{"Comparison":"Personal Best"}'></livesplit-possible-time-save>
+<livesplit-possible-time-save settings='{"Comparison":"Personal Best","TotalTimeSave":true}'></livesplit-possible-time-save>
+<livesplit-previous-segment settings='{"Comparison":"Personal Best","ShowPossibleTimeSave":true,"Display2Rows":true}'></livesplit-previous-segment>
+```
+
+Possible Time Saveは比較区間時間から個別Best Segmentを引き、負なら0にします。比較値のない区間を跨ぐ場合はBest Segmentも合算します。単一区間モードは走行・一時停止中のみ表示し、待機・完走時は「—」。`TotalTimeSave`は待機中に全区間、走行中に残り区間を合計し、現在区間の経過に応じて減少します。完走後は0です。公式同様、合計では算出不能な区間を除外します。
+
+Previous Segmentは直前の区間差分を表示し、ライブ差分の条件成立時は現在区間の差分と「Live Segment」ラベルに切り替えます。`ShowPossibleTimeSave`で「差分 / 短縮可能時間」を表示します。スキップで実測がない区間の差分は「—」。従来の実測時間表示は`livesplit-previous-segment-time`または`livesplit-value field="previous-segment-time"`を使ってください。
+
+| 設定 | Possible Time Save | Previous Segment |
+|---|---|---|
+| `Comparison` | 既定Current Comparison | 同左 |
+| `Display2Rows` | 既定false（左右配置） | 同左 |
+| `DropDecimals` | 既定false | 既定true（差分のみ） |
+| `Accuracy` | 既定Hundredths | — |
+| `TotalTimeSave` | 既定false | — |
+| `DeltaAccuracy` / `TimeSaveAccuracy` | — | ともに既定Tenths |
+| `ShowPossibleTimeSave` | — | 既定false |
+
+精度はSeconds / Tenths / Hundredths / Milliseconds。`label` / `hide-label`、`layout`、通常のCSS変数で装飾できます。専用パーツ内の`data-ls-field`を持つ独自テンプレートも利用できます。Previous Segmentの確定Best Segment色は`bs-effect`に従います。公式の[Possible Time Save](https://github.com/LiveSplit/LiveSplit.PossibleTimeSave/blob/master/src/LiveSplit.PossibleTimeSave/UI/Components/PossibleTimeSave.cs)と[Previous Segment](https://github.com/LiveSplit/LiveSplit.PreviousSegment/blob/master/src/LiveSplit.PreviousSegment/UI/Components/PreviousSegment.cs)を参照しています。
 
 ## 接続先の指定
 

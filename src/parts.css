@@ -7,6 +7,9 @@
 [data-ls-metric][layout="row"] > .ls-label { margin-bottom: 0; min-width: 0; }
 [data-ls-metric][layout="row"] > .ls-value { min-width: 0; text-align: var(--ls-value-align, right); }
 [data-ls-metric][layout="row"][hide-label] { justify-content: var(--ls-value-position, flex-end); }
+[data-native-metric][data-two-rows="false"]:not([layout]) { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ls-label-gap, 1em); }
+[data-native-metric][data-two-rows="false"]:not([layout]) > .ls-label { margin-bottom: 0; min-width: 0; }
+[data-native-metric][data-two-rows="false"]:not([layout]) > .ls-value { text-align: var(--ls-value-align, right); min-width: 0; }
 livesplit-timer .ls-timer { font-size: var(--ls-timer-size, 5rem); font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ls-accent, #67e8b0); }
 livesplit-timer .ls-fraction { font-size: var(--ls-decimal-size, .52em); }
 livesplit-timer:not([data-state="connected"]) .ls-timer { color: var(--ls-muted, #82919f); }

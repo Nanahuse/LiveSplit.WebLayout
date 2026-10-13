@@ -7,6 +7,7 @@ import { columnsFor } from './columns.ts';
 import { updateLiveSplits } from './split-view.ts';
 import { renderSegmentMetrics } from './segment-metrics.ts';
 import { splitSettings } from './split-settings.ts';
+import { renderTimeSave, timeSaveSettings } from './time-save.ts';
 import { renderRecordColors, validateRecordEffects } from './record-colors.ts';
 import { layoutTemplates, configureLayout, detailedComparisons, renderDetailed, textVariables, renderText } from './layout-parts.ts';
 
@@ -53,6 +54,7 @@ class LiveSplitPart extends HTMLElement {
     try {
       validateRecordEffects(this);
       configureLayout(this);
+      if (['livesplit-previous-segment', 'livesplit-possible-time-save'].includes(this.localName)) timeSaveSettings(this);
       if ((this.localName === 'livesplit-text' && !this.querySelector('[data-ls-field], [data-ls-variable]'))) {
         this.dataset.state = 'static'; return;
       }
@@ -82,13 +84,14 @@ class LiveSplitPart extends HTMLElement {
     renderDetailed(session.run, this);
     renderText(session.run, this);
     for (const cell of this.querySelectorAll('[data-live]')) cell.textContent = session.run.liveTime;
-    if (tick) { updateLiveSplits(session.run, this); renderRecordColors(session.run, this, session.status === 'connected'); return; }
+    if (tick) { updateLiveSplits(session.run, this); renderRecordColors(session.run, this, session.status === 'connected'); renderTimeSave(session.run, this, session.status === 'connected'); return; }
     set('status', { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[session.status]);
     set('endpoint', session.endpoint);
     renderReadout(session.run, this);
     if (session.message) set('status', `再接続待ち: ${session.message}`);
     this.updateLabel();
     renderRecordColors(session.run, this, session.status === 'connected');
+    renderTimeSave(session.run, this, session.status === 'connected');
   }
 }
 for (const name of Object.keys(templates)) {

@@ -2,7 +2,9 @@
 export const metrics = {
   'livesplit-hotkey-indicator': { field: 'hotkey-status', label: 'Global Hotkeys' },
   'livesplit-segment-timer': { field: 'segment-time', label: '区間タイマー' },
-  'livesplit-previous-segment': { field: 'previous-segment-time', label: '直前の区間タイム' },
+  'livesplit-previous-segment': { field: 'previous-segment-delta', label: 'Previous Segment' },
+  'livesplit-previous-segment-time': { field: 'previous-segment-time', label: '直前の区間タイム' },
+  'livesplit-possible-time-save': { field: 'possible-time-save', label: 'Possible Time Save' },
   'livesplit-live-segment': { field: 'live-segment-delta', label: '現在区間の差分' },
   'livesplit-current-pace': { field: 'current-pace', label: 'Current Pace' },
   'livesplit-sum-of-best': { field: 'sum-of-best', label: 'Sum of Best' },
