@@ -2,6 +2,7 @@
   "name": "livesplit-web-layout",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@12.9.1",
   "type": "module",
   "scripts": {
     "start": "vite --host 127.0.0.1",

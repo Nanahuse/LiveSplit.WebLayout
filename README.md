@@ -1,14 +1,14 @@
 # LiveSplit.WebLayout
 
-LiveSplit.Bridge Protocol v3を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・npm・HTTPサーバーは不要です。配布物のHTMLをローカルファイルとして直接開けます。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。
+LiveSplit.Bridge Protocol v3を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・pnpm・HTTPサーバーは不要です。配布物のHTMLをローカルファイルとして直接開けます。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。
 
 ## ビルドと配布
 
-開発者のみNode.js 22.12以降が必要です。
+開発者のみNode.js 22.12以降とpnpm 12.9.1が必要です。
 
 ```sh
-npm ci
-npm run build
+pnpm install --frozen-lockfile
+pnpm run build
 ```
 
 `dist/` に次のファイルを出力します。
@@ -453,14 +453,14 @@ Previous Segmentは直前の区間差分を表示し、ライブ差分の条件�
 ## 開発・検証
 
 ```sh
-npm run dev
-npm run generate:protocol
-npm run build
-npm test
-npm run test:live
+pnpm run dev
+pnpm run generate:protocol
+pnpm run build
+pnpm test
+pnpm run test:live
 ```
 
-`test:live`は起動中のBridge v3への読み取り専用検証です。接続先は環境変数 `LIVESPLIT_URL` で変更できます。Start/Split/Reset等の操作RPCは送りません。`npx tsx tests/mock-server.ts` は54001番ポートのバイナリv3フィクスチャです。
+`test:live`は起動中のBridge v3への読み取り専用検証です。接続先は環境変数 `LIVESPLIT_URL` で変更できます。Start/Split/Reset等の操作RPCは送りません。`pnpm exec tsx tests/mock-server.ts` は54001番ポートのバイナリv3フィクスチャです。
 
 通信層は `src/bridge-client.ts`、表示モデルへの変換は `src/bridge-state.ts`、パーツは `src/components.ts`、共通CSSは `src/parts.css`。Protocolの正本は `proto/`、生成元の固定コミットは `proto/SOURCE.json`、生成コードは `src/generated/` です。生成にはbufとprotoc-gen-esを使い、配布JSにProtobufランタイムもバンドルします。
 
