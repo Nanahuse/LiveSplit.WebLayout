@@ -1,6 +1,6 @@
 # LiveSplit.WebLayout
 
-LiveSplit.Bridge Protocol v3を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・npmは不要です。配布物はlocalhostの静的HTTPサーバーから提供します。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。
+LiveSplit.Bridge Protocol v3を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・npm・HTTPサーバーは不要です。配布物のHTMLをローカルファイルとして直接開けます。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。
 
 ## ビルドと配布
 
@@ -19,17 +19,10 @@ npm run build
 | `livesplit.css` | 任意の初期スタイル。編集・差し替え・省略可能 |
 | `index.html` | 全パーツの配置例。レイアウトやデザインはこのHTMLで編集 |
 | `timer.html` | OBS向けの透過タイマーだけの配置例 |
-| `serve.ps1` | Windows用loopback専用の静的HTTPサーバー |
 
-LiveSplitにProtocol v3対応のLiveSplit.Bridgeを追加して起動してください。RPCの既定接続先は `ws://127.0.0.1:54000/bridge/v3/rpc`、Eventsは同じポートの `/bridge/v3/events` です。
+LiveSplitにローカルファイルからの接続に対応したProtocol v3のLiveSplit.Bridgeを追加して起動してください。RPCの既定接続先は `ws://127.0.0.1:54000/bridge/v3/rpc`、Eventsは同じポートの `/bridge/v3/events` です。
 
-Windowsでは配布したdistフォルダーで次を実行できます（Windows PowerShell標準機能のみ）。
-
-```powershell
-powershell -NoProfile -File .\serve.ps1
-```
-
-ブラウザー／OBSブラウザソースのURLには `http://127.0.0.1:8080/index.html` または `http://127.0.0.1:8080/timer.html` を指定します。別の静的HTTPサーバーも利用可能です。PowerShellスクリプトが組織ポリシー等で実行できない場合は許可された静的サーバーを使ってください。BridgeのOrigin制限のため **file://やOBSのローカルファイル指定は非対応** です。Origin制限は緩和しません。
+ブラウザーで `dist/index.html` を直接開いてください。OBSではブラウザソースの「ローカルファイル」を有効にして `dist/index.html` または透過タイマーの `dist/timer.html` を指定します。HTTP経由での表示も引き続き利用できます。
 
 配布物を編集しても再ビルドは不要です。ただし次のビルドで `dist/` は置き換わるため、自分のレイアウトは別フォルダーに保存してください。従来の単一HTML配布から変更しています。JS・CSSも一緒に配置してください。
 

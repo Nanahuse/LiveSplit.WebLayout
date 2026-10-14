@@ -6,8 +6,8 @@ import { metrics } from '../src/metrics.ts';
 import { fixture, FakeBridgeSocket, flush, ticks } from './bridge-fixture.ts';
 import { AttemptSegmentSchema, TimerPhase, BridgeEventType } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
 
-test('parts share binary Bridge connections, render full run and custom fields, then release sockets', async () => {
-  const dom = new Window({ url: 'http://localhost/' });
+test('local-file parts share binary Bridge connections, render full run and custom fields, then release sockets', async () => {
+  const dom = new Window({ url: 'file:///C:/layouts/index.html' });
   const sockets: FakeBridgeSocket[] = []; const data = fixture();
   class Socket extends FakeBridgeSocket {
     constructor(url: string) { super(url); sockets.push(this); queueMicrotask(() => this.onopen?.()); }

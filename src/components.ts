@@ -60,7 +60,6 @@ class LiveSplitPart extends HTMLElement {
         this.dataset.state = 'static'; return;
       }
       const server = this.getAttribute('server');
-      if (location.protocol === 'file:') throw new Error('Bridge v3はfile://に接続を許可しません。localhostのHTTPサーバーで開いてください。');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
       if (this.localName === 'livesplit-splits') splitSettings(this);
       if (this.localName === 'livesplit-subsplits') subsplitSettings(this);
