@@ -69,9 +69,11 @@ export function renderRecordColors(run: RunReadout, root: HTMLElement, connected
     apply(element, state.pb ? 'pb' : '');
   }
   for (const element of root.querySelectorAll<HTMLElement>('[data-ls-field="previous-segment-time"]')) apply(element, state.best.has(state.last) ? 'bs' : '');
-  const columns = root.localName === 'livesplit-splits' ? columnsFor(root) : [];
-  const showBestSegments = root.localName === 'livesplit-splits' ? splitSettings(root).ShowBestSegments : true;
+  const splits = ['livesplit-splits', 'livesplit-subsplits'].includes(root.localName);
+  const columns = splits ? columnsFor(root) : [];
+  const showBestSegments = splits ? splitSettings(root).ShowBestSegments : true;
   for (const row of root.querySelectorAll<HTMLElement>('[data-split-index]')) {
+    if (row.dataset.collapsed === 'true') continue;
     const index = Number(row.dataset.splitIndex);
     for (const cell of row.querySelectorAll<HTMLElement>('td')) {
       const column = columns[Number(cell.dataset.columnIndex)];

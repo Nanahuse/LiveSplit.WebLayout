@@ -6,7 +6,7 @@ import { metrics, metricTemplate } from './metrics.ts';
 import { columnsFor } from './columns.ts';
 import { updateLiveSplits } from './split-view.ts';
 import { renderSegmentMetrics } from './segment-metrics.ts';
-import { splitSettings } from './split-settings.ts';
+import { splitSettings, subsplitSettings } from './split-settings.ts';
 import { renderTimeSave, timeSaveSettings } from './time-save.ts';
 import { renderRecordColors, validateRecordEffects } from './record-colors.ts';
 import { layoutTemplates, configureLayout, detailedComparisons, renderDetailed, textVariables, renderText } from './layout-parts.ts';
@@ -15,6 +15,7 @@ const templates: Record<string, string> = {
   'livesplit-timer': '<span class="ls-timer" role="timer" aria-live="off"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></span>',
   'livesplit-game': '<div class="ls-game" data-ls-field="game">—</div><div class="ls-category" data-ls-field="category">—</div>',
   'livesplit-splits': '<table class="ls-splits" aria-label="Splits"><thead><tr data-ls-field="split-head"></tr></thead><tbody data-ls-field="splits"></tbody></table>',
+  'livesplit-subsplits': '<table class="ls-splits" aria-label="Subsplits"><thead><tr data-ls-field="split-head"></tr></thead><tbody data-ls-field="splits"></tbody></table>',
   'livesplit-status': '<span data-ls-field="status" role="status">接続中</span>',
   'livesplit-value': '<span data-ls-value>—</span>',
   ...Object.fromEntries(Object.entries(metrics).map(([name, metric]) => [name, metricTemplate(metric)])),
@@ -62,8 +63,9 @@ class LiveSplitPart extends HTMLElement {
       if (location.protocol === 'file:') throw new Error('Bridge v3はfile://に接続を許可しません。localhostのHTTPサーバーで開いてください。');
       const endpoint = getEndpoint(server === null ? location.search : `?server=${encodeURIComponent(server)}`);
       if (this.localName === 'livesplit-splits') splitSettings(this);
+      if (this.localName === 'livesplit-subsplits') subsplitSettings(this);
       // Validate settings; Bridge supplies all comparisons and variables together.
-      if (this.localName === 'livesplit-splits') columnsFor(this);
+      if (['livesplit-splits', 'livesplit-subsplits'].includes(this.localName)) columnsFor(this);
       if (this.localName === 'livesplit-detailed-timer') detailedComparisons(this);
       textVariables(this);
       this.unsubscribe = subscribe(endpoint, (session, tick) => this.render(session, tick));

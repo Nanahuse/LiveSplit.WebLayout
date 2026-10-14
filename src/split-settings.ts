@@ -1,3 +1,4 @@
+import { subsplitDefaults } from './subsplits.ts';
 export const splitDefaults = {
   VisualSplitCount: 8, SplitPreviewCount: 1, AlwaysShowLastSplit: true,
   ShowBlankSplits: true, LockLastSplit: true, SeparatorLastSplit: true,
@@ -14,7 +15,9 @@ export function nativeSettings(root: Element): Record<string, unknown> {
 export function splitSettings(root: Element): SplitSettings {
   const raw = nativeSettings(root);
   const settings = { ...splitDefaults };
-  const unsupported = Object.keys(raw).filter(key => key !== 'Columns' && !(key in settings));
+  const sub = root.localName === 'livesplit-subsplits';
+  if (sub) settings.ShowThinSeparators = false;
+  const unsupported = Object.keys(raw).filter(key => key !== 'Columns' && !(key in settings) && !(sub && key in subsplitDefaults));
   if (unsupported.length) throw new Error(`未対応のSplits設定: ${unsupported.join(', ')}`);
   for (const key of Object.keys(settings) as (keyof SplitSettings)[]) {
     if (!(key in raw)) continue;
@@ -31,6 +34,22 @@ export function splitSettings(root: Element): SplitSettings {
   for (const accuracy of [settings.SplitTimesAccuracy, settings.DeltasAccuracy]) {
     if (!['Seconds', 'Tenths', 'Hundredths', 'Milliseconds'].includes(accuracy)) throw new Error('Invalid accuracy');
   }
+  return settings;
+}
+export function subsplitSettings(root: Element) {
+  const raw = nativeSettings(root), settings = { ...splitSettings(root), ...subsplitDefaults };
+  for (const key of Object.keys(subsplitDefaults) as (keyof typeof subsplitDefaults)[]) {
+    if (!(key in raw)) continue;
+    if (typeof raw[key] !== typeof settings[key]) throw new Error(`Invalid ${key}`);
+    Object.assign(settings, { [key]: raw[key] });
+  }
+  if (!Number.isInteger(settings.MinimumMajorSplits) || settings.MinimumMajorSplits < 0) throw new Error('Invalid MinimumMajorSplits');
+  if (settings.ShowSubsplits && settings.HideSubsplits) throw new Error('ShowSubsplits and HideSubsplits cannot both be true');
+  if (settings.ShowSubsplits) settings.CurrentSectionOnly = false;
+  if (!['Current Timing Method', 'Real Time', 'Game Time'].includes(settings.HeaderTimingMethod)) throw new Error('Invalid HeaderTimingMethod');
+  if (/[\r\n\0]/.test(settings.HeaderComparison)) throw new Error('Invalid HeaderComparison');
+  for (const accuracy of [settings.HeaderAccuracy, settings.SectionTimerAccuracy])
+    if (!['Seconds', 'Tenths', 'Hundredths', 'Milliseconds'].includes(accuracy)) throw new Error('Invalid header accuracy');
   return settings;
 }
 export function splitNumber(value: number, delta: boolean, settings: SplitSettings): string {

@@ -21,8 +21,10 @@ test('parts share binary Bridge connections, render full run and custom fields, 
     assert.equal(sockets.length, 0); assert.equal(body.querySelector('b'), null);
     body.innerHTML = '<livesplit-timer></livesplit-timer><livesplit-timer><strong data-ls-field="whole"></strong><small data-ls-field="fraction"></small></livesplit-timer><livesplit-splits></livesplit-splits><livesplit-detailed-timer></livesplit-detailed-timer><livesplit-text right-variable="Deaths"></livesplit-text>';
     for (const tag of Object.keys(metrics)) body.appendChild(dom.document.createElement(tag));
+    body.appendChild(dom.document.createElement('livesplit-subsplits'));
     await flush(); await flush();
     assert.equal(sockets.length, 2);
+    assert.ok(body.querySelector('livesplit-subsplits [data-split-index="2"]'));
     assert.ok(sockets[0].url.endsWith('/events')); assert.ok(sockets[1].url.endsWith('/rpc'));
     assert.equal(body.querySelector('strong')?.textContent, '1:23');
     const text = (tag: string) => body.querySelector(`${tag} .ls-value`)?.textContent;

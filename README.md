@@ -371,7 +371,7 @@ Custom VariableはContextStateに含まれ、Context変更イベントと750ms�
 | Title / Blank Space / Separator | 既存のゲーム名・回数パーツ、HTML・CSSで構成できるため専用タグを追加しない |
 | Total Playtime | 未実装。全Attempt履歴はv3では取得不可 |
 | Counter | 内部カウンターはv3で公開されていないため未対応 |
-| Subsplits | 今回は未追加。全区間データはBridgeで取得可能 |
+| Subsplits | `livesplit-subsplits`。自動展開・折りたたみ、グループ時計と差分、見出しに対応 |
 | World Record / Video | 未実装。外部ランキング連携や動画の同期・再生設定は別の実装が必要 |
 | Auto Splitting / Manual Game Time / Sound / Racetime / TheRun等 | 表示専用WSパーツの対象外（操作・自動計測・音声・外部サービス連携） |
 
@@ -398,6 +398,43 @@ Previous Segmentは直前の区間差分を表示し、ライブ差分の条件�
 | `ShowPossibleTimeSave` | — | 既定false |
 
 精度はSeconds / Tenths / Hundredths / Milliseconds。`label` / `hide-label`、`layout`、通常のCSS変数で装飾できます。専用パーツ内の`data-ls-field`を持つ独自テンプレートも利用できます。Previous Segmentの確定Best Segment色は`bs-effect`に従います。公式の[Possible Time Save](https://github.com/LiveSplit/LiveSplit.PossibleTimeSave/blob/master/src/LiveSplit.PossibleTimeSave/UI/Components/PossibleTimeSave.cs)と[Previous Segment](https://github.com/LiveSplit/LiveSplit.PreviousSegment/blob/master/src/LiveSplit.PreviousSegment/UI/Components/PreviousSegment.cs)を参照しています。
+
+### Subsplits
+
+```html
+<livesplit-subsplits settings='{"ShowColumnLabels":true,"VisualSplitCount":8,"ShowHeader":true}'></livesplit-subsplits>
+```
+
+通常のSplitsと同じBridge接続を共有する表示専用パーツです。公式の名前ルールで、連続する`-`付き区間と、その次の主要区間を1グループにします。例えば次の区間名をLiveSplit側で登録します。
+
+```text
+-道中1
+-道中2
+{ステージ1}ボス
+-道中
+{ステージ2}ボス
+```
+
+`{ステージ1}ボス`は見出し・折りたたみ時に「ステージ1」、展開時に「ボス」を表示します。通常の主要区間名も使えます。最終行は先頭に`-`があっても主要区間として扱います。多段の入れ子構造ではありません。
+
+| 設定 | 既定値・意味 |
+|---|---|
+| `ShowSubsplits` / `HideSubsplits` | 両方false：現在グループのみ展開。前者true：全展開、後者true：全折りたたみ。同時trueはエラー |
+| `CurrentSectionOnly` | false。他グループの主要行を省略。全展開時は無効。最終区間固定は別設定 |
+| `MinimumMajorSplits` | 0。自動展開時、直前の主要区間のために行数を確保 |
+| `ShowHeader` | true。現在グループの見出しを追加。表示行数に含む |
+| `HeaderText` / `HeaderTimes` / `SectionTimer` | true。見出しの名前／比較時間または差分／グループ時計 |
+| `HeaderComparison` / `HeaderTimingMethod` | Current Comparison / Current Timing Method |
+| `HeaderAccuracy` / `SectionTimerAccuracy` | Tenths |
+| `IndentSubsplits` / `IndentSectionSplit` | true。子区間と展開中のグループ最終行を字下げ |
+
+列設定・計測方式・表示行数・先読み・最終区間固定・幅・精度などはSplitsと共通です。細い区切り線の既定値は公式Subsplitsに合わせてfalseです。狭い表示行数では最終行を優先し、余裕がある場合に見出しを追加します。
+
+折りたたみ行の`Segment Time` / `Segment Delta`はグループ全体の時間・差分です。ライブ差分はグループ差分が正になるか、累積差分列で比較累積タイムを超えた場合に表示します。境界の実測・比較値が欠損している場合は遡って補わず「—」です。折りたたみ行はグループの先行・遅延色を使い、単一区間のBest Segment色を流用しません。常時表示の拡張列とCustom Variableは、グループ最終区間の値を表示します。
+
+共通のSplits用CSS変数に加え、`--ls-subsplit-indent`、`--ls-header-background`、`--ls-header-color`、`--ls-header-weight`、`--ls-section-timer-color`、`--ls-section-gap`、`--ls-collapsed-background`を設定できます。`data-section-index` / `data-section-start` / `data-section-end` / `data-collapsed` / `data-section-header`で行別に装飾できます。
+
+[公式Subsplits](https://github.com/LiveSplit/LiveSplit.Subsplits)のグループ解析・行選択・時間計算を参照しています。アイコン、文字の自動省略候補、ネイティブ描画固有の影・グラデーション設定、LiveSplit側の手動スクロールイベントの同期は未対応です。配色・装飾はCSSを使用してください。
 
 ## 接続先の指定
 
