@@ -5,7 +5,7 @@ import { fixture, ticks } from './bridge-fixture.ts';
 import { applyBridgeSnapshot } from '../src/bridge-state.ts';
 import { RunReadout } from '../src/readout.ts';
 import { possibleTimeSave, totalPossibleTimeSave, previousSegment, renderTimeSave, timeSaveSettings } from '../src/time-save.ts';
-import { TimerPhase, TimingMethod } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
+import { TimerPhase, TimingMethod } from '../src/generated/protocol.ts';
 
 test('possible save uses bests, combines missing comparison segments and clamps live total', () => {
   const s = fixture(), run = new RunReadout(); applyBridgeSnapshot(run, s, 0);
@@ -21,9 +21,9 @@ test('possible save uses bests, combines missing comparison segments and clamps 
   s.timer.phase = TimerPhase.NOT_RUNNING; s.timer.splitIndex = -1; applyBridgeSnapshot(run, s, 0);
   assert.equal(totalPossibleTimeSave(run, 'Personal Best'), 30);
   assert.equal(previousSegment(run, 'Personal Best').delta, null);
-  s.run.segments[0].comparisons.find(c => c.name === 'Personal Best')!.time = undefined;
+  s.run.segments[0].comparisons.find(c => c.name === 'Personal Best')!.time = {};
   applyBridgeSnapshot(run, s, 0); assert.equal(possibleTimeSave(run, 1, 'Personal Best'), 20);
-  s.run.segments[0].bestSegmentTime = undefined;
+  s.run.segments[0].bestSegmentTime = {};
   applyBridgeSnapshot(run, s, 0); assert.equal(possibleTimeSave(run, 1, 'Personal Best'), null);
   s.timer.phase = TimerPhase.ENDED; applyBridgeSnapshot(run, s, 0);
   assert.equal(totalPossibleTimeSave(run, 'Personal Best'), 0);

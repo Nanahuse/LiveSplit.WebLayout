@@ -1,7 +1,7 @@
 import type { BridgeSnapshot } from './bridge-client.ts';
 import { clockTicks } from './bridge-client.ts';
-import { TimingMethod, TimerPhase } from './generated/livesplit/bridge/v3/common_pb.ts';
-import type { TimeValue } from './generated/livesplit/bridge/v3/common_pb.ts';
+import { TimingMethod, TimerPhase } from './generated/protocol.ts';
+import type { TimeValue } from './generated/protocol.ts';
 import { RunReadout } from './readout.ts';
 import { formatTime } from './timer.ts';
 import type { ReadField } from './timer.ts';
@@ -13,7 +13,7 @@ export function timeSpan(ticks: bigint): string {
 }
 const numeric = (ticks: bigint | undefined) => ticks === undefined ? null : Number(ticks) / 10000000;
 const valueFor = (time: TimeValue | undefined, game: boolean) => game ? time?.gameTimeTicks : time?.realTimeTicks;
-const phaseNames: Record<number, string> = { [TimerPhase.NOT_RUNNING]: 'NotRunning', [TimerPhase.RUNNING]: 'Running', [TimerPhase.PAUSED]: 'Paused', [TimerPhase.ENDED]: 'Ended' };
+const phaseNames: Record<string, string> = { [TimerPhase.NOT_RUNNING]: 'NotRunning', [TimerPhase.RUNNING]: 'Running', [TimerPhase.PAUSED]: 'Paused', [TimerPhase.ENDED]: 'Ended' };
 function setTime(run: RunReadout, key: ReadField, value: number | null) {
   if (value === null || !Number.isFinite(value)) run.values.delete(key);
   else run.values.set(key, timeSpan(BigInt(Math.round(value * 10000000))));

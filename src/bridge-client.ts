@@ -1,23 +1,21 @@
-import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { RequestSchema, ResponseSchema } from './generated/livesplit/bridge/v3/bridge_pb.ts';
-import type { Response } from './generated/livesplit/bridge/v3/bridge_pb.ts';
-import { BridgeEventSchema, BridgeEventType, TimerPhase } from './generated/livesplit/bridge/v3/common_pb.ts';
-import type { TimerState, AttemptState, ContextState, CompletedCount } from './generated/livesplit/bridge/v3/common_pb.ts';
-import type { RunState } from './generated/livesplit/bridge/v3/run_pb.ts';
+import { BridgeEventType, TimerPhase } from './generated/protocol.ts';
+import type { TimerState, AttemptState, ContextState, CompletedCount, RunState } from './generated/protocol.ts';
+import { readReply, readResult, readEvent } from './bridge-protocol.ts';
+import type { Query, RpcReply } from './bridge-protocol.ts';
 import type { ConnectionStatus } from './timer.ts';
 
 export interface BridgeSnapshot {
   timer: TimerState; timerAt: number; run: RunState; attempt: AttemptState;
   context: ContextState; completed: CompletedCount; attemptFresh: boolean;
 }
-export type Query = 'getTimerState' | 'getRun' | 'getAttempt' | 'getContextState' | 'getCompletedCount';
+export type { Query } from './bridge-protocol.ts';
 export interface BridgeSocket {
   binaryType: string;
   onopen: (() => void) | null;
   onmessage: ((event: { data: unknown }) => void) | null;
   onerror: (() => void) | null;
   onclose: (() => void) | null;
-  send(data: Uint8Array): void; close(): void;
+  send(data: string): void; close(): void;
 }
 interface Options {
   createSocket?: (url: string) => BridgeSocket;
@@ -26,24 +24,19 @@ interface Options {
   onStatus: (status: ConnectionStatus, message?: string) => void;
   pollMs?: number; timeoutMs?: number; retryMs?: number;
 }
-const queries: Query[] = ['getTimerState', 'getAttempt', 'getRun', 'getContextState', 'getCompletedCount'];
-function bytes(data: unknown): Uint8Array {
-  if (data instanceof ArrayBuffer) return new Uint8Array(data);
-  if (data instanceof Uint8Array) return data;
-  throw new Error('Bridge v3 requires binary Protobuf messages');
-}
+const queries: Query[] = ['get_timer_state', 'get_attempt', 'get_run', 'get_context_state', 'get_completed_count'];
 
-/** Read-only v3 transport. Neither timer_operation nor game_time_operation is exposed. */
+/** Read-only v4 transport. Neither timer_operation nor game_time_operation is exposed. */
 export class BridgeClient {
   private rpc?: BridgeSocket;
   private events?: BridgeSocket;
   private stopped = true;
   private generation = 0;
   private epoch = 0;
-  private session?: bigint;
-  private sequence?: bigint;
-  private requestId = 0n;
-  private pending = new Map<bigint, { method: Query; resolve: (response: Response) => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
+  private session?: number;
+  private sequence?: number;
+  private requestId = 0;
+  private pending = new Map<number, { method: Query; resolve: (response: RpcReply) => void; reject: (error: Error) => void; timeout: ReturnType<typeof setTimeout> }>();
   private dirty = new Set<Query>();
   private syncing = false;
   private ready = false;
@@ -84,19 +77,20 @@ export class BridgeClient {
       events.onmessage = event => {
         if (gen !== this.generation) return;
         try {
-          const message = fromBinary(BridgeEventSchema, bytes(event.data));
+          const message = readEvent(event.data);
           this.checkSession(message.sessionId);
-          if (message.eventSequence === 0n || (this.sequence !== undefined && message.eventSequence !== this.sequence + 1n)) throw new Error('Bridge event sequence gap: resynchronizing');
+          if (this.sequence !== undefined && message.eventSequence !== (this.sequence === 0xffffffff ? 1 : this.sequence + 1)) throw new Error('Bridge event sequence gap: resynchronizing');
           this.sequence = message.eventSequence; this.epoch++;
           if (message.type === BridgeEventType.EVENT_RUN_CHANGED) this.invalidate(queries);
-          else if (message.type === BridgeEventType.EVENT_CONTEXT_CHANGED) this.invalidate(['getContextState', 'getTimerState']);
-          else if (message.type >= BridgeEventType.EVENT_TIMER_STARTED && message.type <= BridgeEventType.EVENT_TIMER_PHASE_CHANGED) {
+          else if (message.type === BridgeEventType.EVENT_CONTEXT_CHANGED) this.invalidate(['get_context_state', 'get_timer_state']);
+          else {
             if (message.timerState && this.snapshot) {
               this.snapshot = { ...this.snapshot, timer: message.timerState, timerAt: this.now(), attemptFresh: false };
               if (this.ready) this.options.onSnapshot(this.snapshot);
             }
-            this.invalidate(['getTimerState', 'getAttempt', 'getCompletedCount']);
-          } else this.invalidate(queries);
+            // Reset can change comparisons, best segments, and context even if run_changed is lost.
+            this.invalidate(message.type === BridgeEventType.EVENT_TIMER_RESET ? queries : ['get_timer_state', 'get_attempt', 'get_completed_count']);
+          }
         } catch (error) { this.fail(error); }
       };
       events.onopen = () => {
@@ -107,15 +101,16 @@ export class BridgeClient {
           rpc.onmessage = event => {
             if (gen !== this.generation) return;
             try {
-              const response = fromBinary(ResponseSchema, bytes(event.data));
-              if (response.protocolVersion !== 3) throw new Error('LiveSplit.Bridge Protocol v3 is required');
+              const response = readReply(event.data);
               this.checkSession(response.sessionId);
               const pending = this.pending.get(response.requestId);
               if (!pending) throw new Error('Unknown Bridge response request_id');
               this.pending.delete(response.requestId); clearTimeout(pending.timeout);
-              if (response.body.case !== pending.method) {
-                pending.reject(new Error(response.body.case === 'error' ? response.body.value.message : 'Bridge response type mismatch'));
-              } else pending.resolve(response);
+              if (response.error) pending.reject(new Error(response.error.message));
+              else {
+                try { response.result = readResult(pending.method, response.result); pending.resolve(response); }
+                catch (error) { pending.reject(error as Error); throw error; }
+              }
             } catch (error) { this.fail(error); }
           };
           rpc.onopen = () => {
@@ -126,23 +121,25 @@ export class BridgeClient {
       };
     } catch (error) { this.fail(error); }
   }
-  private checkSession(id: bigint) {
-    if (id === 0n || (this.session !== undefined && id !== this.session)) throw new Error('Bridge session changed: reconnecting');
+  private checkSession(id: number) {
+    if (this.session !== undefined && id !== this.session) throw new Error('Bridge session changed: reconnecting');
     this.session = id;
   }
-  private query(method: Query): Promise<Response> {
-    const request = create(RequestSchema, { protocolVersion: 3, requestId: ++this.requestId, body: { case: method, value: {} } });
+  private query(method: Query): Promise<RpcReply> {
+    while (this.pending.has(this.requestId)) this.requestId = (this.requestId + 1) >>> 0;
+    const request = { request_id: this.requestId, method };
+    this.requestId = (this.requestId + 1) >>> 0;
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => this.fail(new Error(`Bridge ${method} timed out`)), this.options.timeoutMs ?? 3000);
-      this.pending.set(request.requestId, { method, resolve, reject, timeout });
-      try { this.rpc!.send(toBinary(RequestSchema, request)); } catch (error) { this.fail(error); }
+      this.pending.set(request.request_id, { method, resolve, reject, timeout });
+      try { this.rpc!.send(JSON.stringify(request)); } catch (error) { this.fail(error); }
     });
   }
   private schedulePoll() {
     const gen = this.generation;
     this.poll = setTimeout(() => {
       if (this.stopped || gen !== this.generation) return;
-      this.invalidate(['getTimerState', 'getContextState']);
+      this.invalidate(['get_timer_state', 'get_context_state']);
       if (gen === this.generation) this.schedulePoll();
     }, this.options.pollMs ?? 750);
   }
@@ -153,25 +150,24 @@ export class BridgeClient {
     try {
       while (this.dirty.size && gen === this.generation) {
         const keys = [...this.dirty]; this.dirty.clear(); const epoch = this.epoch;
-        const result = await Promise.all(keys.map(async key => ({ response: await this.query(key), at: this.now() })));
+        const result = await Promise.all(keys.map(async key => ({ key, response: await this.query(key), at: this.now() })));
         if (gen !== this.generation) return;
         // RPC has no event_sequence. Discard the entire batch if events crossed it.
         if (epoch !== this.epoch) { for (const key of keys) this.dirty.add(key); continue; }
         const next = { ...this.snapshot } as BridgeSnapshot;
-        for (const { response, at } of result) {
-          const body = response.body;
-          switch (body.case) {
-            case 'getTimerState': if (!body.value.timerState) throw new Error('Missing TimerState'); next.timer = body.value.timerState; next.timerAt = at; break;
-            case 'getRun': if (!body.value.run) throw new Error('Missing RunState'); next.run = body.value.run; break;
-            case 'getAttempt': if (!body.value.attempt) throw new Error('Missing AttemptState'); next.attempt = body.value.attempt; next.attemptFresh = true; break;
-            case 'getContextState': if (!body.value.contextState) throw new Error('Missing ContextState'); next.context = body.value.contextState; break;
-            case 'getCompletedCount': if (!body.value.completedCount) throw new Error('Missing CompletedCount'); next.completed = body.value.completedCount; break;
+        for (const { key, response, at } of result) {
+          switch (key) {
+            case 'get_timer_state': next.timer = response.result as TimerState; next.timerAt = at; break;
+            case 'get_run': next.run = response.result as RunState; break;
+            case 'get_attempt': next.attempt = response.result as AttemptState; next.attemptFresh = true; break;
+            case 'get_context_state': next.context = response.result as ContextState; break;
+            case 'get_completed_count': next.completed = response.result as CompletedCount; break;
           }
         }
         if (!next.timer || !next.run || !next.attempt || !next.context || !next.completed) throw new Error('Incomplete Bridge snapshot');
-        if (!keys.includes('getAttempt') && this.snapshot && (next.timer.splitIndex !== this.snapshot.timer.splitIndex || next.timer.phase !== this.snapshot.timer.phase)) {
+        if (!keys.includes('get_attempt') && this.snapshot && (next.timer.splitIndex !== this.snapshot.timer.splitIndex || next.timer.phase !== this.snapshot.timer.phase)) {
           // A timer resync can discover a change before its event arrives.
-          next.attemptFresh = false; this.dirty.add('getAttempt'); this.dirty.add('getCompletedCount');
+          next.attemptFresh = false; this.dirty.add('get_attempt'); this.dirty.add('get_completed_count');
         }
         this.snapshot = next; this.options.onStatus('connected'); this.options.onSnapshot(next);
       }

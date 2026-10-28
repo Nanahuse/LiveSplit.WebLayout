@@ -1,3 +1,2 @@
 allowBuilds:
-  '@bufbuild/buf': true
   esbuild: true

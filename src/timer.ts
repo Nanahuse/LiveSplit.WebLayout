@@ -15,11 +15,11 @@ export function formatTime(value: string): TimerDisplay | null {
 }
 
 export function getEndpoint(search: string): string {
-  const value = new URLSearchParams(search).get('server') ?? 'ws://127.0.0.1:54000/bridge/v3/rpc';
+  const value = new URLSearchParams(search).get('server') ?? 'ws://127.0.0.1:54000/bridge/v4/rpc';
   const url = new URL(value);
   if (!['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.hash) {
     throw new Error('接続先には ws:// または wss:// の WebSocket URL を指定してください。');
   }
-  if (!/\/bridge\/v3\/rpc$/.test(url.pathname) || url.search) throw new Error('Bridge v3 RPC URLを指定してください');
+  if (!/\/bridge\/v4\/rpc$/.test(url.pathname) || url.search) throw new Error('Bridge v4 RPC URLを指定してください');
   return url.href;
 }

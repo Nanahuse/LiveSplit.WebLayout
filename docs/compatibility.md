@@ -10,8 +10,8 @@
 | Previous Segment / Possible Time Save | 区間差分・Live Segment・短縮可能時間の併記・残り合計に対応。[Possible Time Save](components/metrics/possible-time-save.md)・[Previous Segment](components/metrics/previous-segment.md)の設定参照 |
 | Text / Hotkey Indicator | [部品一覧](components/README.md)のパーツ。TextはfieldまたはCustom Variable指定を利用 |
 | Title / Blank Space / Separator | 既存のゲーム名・回数パーツ、HTML・CSSで構成できるため専用タグを追加しない |
-| Total Playtime | 未実装。全Attempt履歴はv3では取得不可 |
-| Counter | 内部カウンターはv3で公開されていないため未対応 |
+| Total Playtime | 未実装。全Attempt履歴はv4では取得不可 |
+| Counter | 内部カウンターはv4で公開されていないため未対応 |
 | Subsplits | `livesplit-subsplits`。自動展開・折りたたみ、グループ時計と差分、見出しに対応 |
 | World Record / Video | 未実装。外部ランキング連携や動画の同期・再生設定は別の実装が必要 |
 | Auto Splitting / Manual Game Time / Sound / Racetime / TheRun等 | 表示専用WSパーツの対象外（操作・自動計測・音声・外部サービス連携） |

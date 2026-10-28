@@ -1,6 +1,6 @@
 # Hotkey Indicator
 
-Bridge v3はホットキー有効状態を公開していないため、現状は未知色の線と「取得不可」を表示します。状態の操作は行いません。
+Bridge v4はホットキー有効状態を公開していないため、現状は未知色の線と「取得不可」を表示します。状態の操作は行いません。
 
 ```html
 <livesplit-hotkey-indicator show-text label="Hotkeys"

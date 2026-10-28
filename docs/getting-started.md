@@ -16,7 +16,7 @@ pnpm run build
 | `index.html` | 全パーツの配置例。レイアウトやデザインはこのHTMLで編集 |
 | `timer.html` | OBS向けの透過タイマーだけの配置例 |
 
-LiveSplitにローカルファイルからの接続に対応したProtocol v3のLiveSplit.Bridgeを追加して起動してください。RPCの既定接続先は `ws://127.0.0.1:54000/bridge/v3/rpc`、Eventsは同じポートの `/bridge/v3/events` です。
+LiveSplitにローカルファイルからの接続に対応したProtocol v4のLiveSplit.Bridgeを追加して起動してください。RPCの既定接続先は `ws://127.0.0.1:54000/bridge/v4/rpc`、Eventsは同じポートの `/bridge/v4/events` です。
 
 ブラウザーで `dist/index.html` を直接開いてください。OBSではブラウザソースの「ローカルファイル」を有効にして `dist/index.html` または透過タイマーの `dist/timer.html` を指定します。HTTP経由での表示も引き続き利用できます。
 

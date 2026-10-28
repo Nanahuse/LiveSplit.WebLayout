@@ -1,8 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { create } from '@bufbuild/protobuf';
-import { fixture, ticks } from './bridge-fixture.ts';
-import { TimerPhase, AttemptSegmentSchema } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
+import { fixture, ticks, attemptSegment } from './bridge-fixture.ts';
+import { TimerPhase } from '../src/generated/protocol.ts';
 import { applyBridgeSnapshot } from '../src/bridge-state.ts';
 import { RunReadout } from '../src/readout.ts';
 import { columnValue } from '../src/columns.ts';
@@ -25,19 +24,19 @@ test('six native time columns switch between references, live deltas, actuals an
   s.timer.phase = TimerPhase.PAUSED; applyBridgeSnapshot(model, s, 0);
   assert.deepEqual(values(1), [120, 60, -10, -9, -10, -9]);
   s.timer.splitIndex = 2;
-  s.attempt.segments.push(create(AttemptSegmentSchema, { index: 1, splitTime: { realTimeTicks: ticks(110) } }));
+  s.attempt.segments.push(attemptSegment(1, ticks(110)));
   applyBridgeSnapshot(model, s, 0);
   assert.deepEqual(values(1), [110, 51, -10, -9, -10, -9]);
-  s.attempt.segments[1].splitTime = undefined; applyBridgeSnapshot(model, s, 0);
+  s.attempt.segments[1].splitTime = {}; applyBridgeSnapshot(model, s, 0);
   assert.deepEqual(values(1), [null, null, null, null, null, null]);
 });
 
 test('native segment references and deltas skip missing comparisons independently of actuals', () => {
   const s = fixture(), model = new RunReadout();
-  s.run.segments[1].comparisons.find(c => c.name === 'Personal Best')!.time = undefined;
+  s.run.segments[1].comparisons.find(c => c.name === 'Personal Best')!.time = {};
   s.timer.phase = TimerPhase.ENDED; s.timer.splitIndex = 3;
-  s.attempt.segments.push(create(AttemptSegmentSchema, { index: 1, splitTime: { realTimeTicks: ticks(110) } }),
-    create(AttemptSegmentSchema, { index: 2, splitTime: { realTimeTicks: ticks(170) } }));
+  s.attempt.segments.push(attemptSegment(1, ticks(110)),
+    attemptSegment(2, ticks(170)));
   applyBridgeSnapshot(model, s, 0);
   const get = (type: ColumnType, comparison = 'Personal Best') => columnValue(model, 2, { name: '', type, comparison }, true).value;
   assert.equal(get('SegmentTime'), 60); // previous actual 110

@@ -1,13 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { create } from '@bufbuild/protobuf';
 import { applyBridgeSnapshot, timeSpan } from '../src/bridge-state.ts';
 import { RunReadout } from '../src/readout.ts';
 import { columnValue } from '../src/columns.ts';
 import { recordStates } from '../src/record-colors.ts';
 import { segmentMetrics } from '../src/segment-metrics.ts';
-import { AttemptSegmentSchema, TimerPhase, TimingMethod } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
-import { fixture, ticks } from './bridge-fixture.ts';
+import { TimerPhase, TimingMethod } from '../src/generated/protocol.ts';
+import { fixture, ticks, attemptSegment } from './bridge-fixture.ts';
 
 test('fixed comparison segment columns retain references before and after completion', () => {
   const s = fixture(), model = new RunReadout();
@@ -22,7 +21,7 @@ test('fixed comparison segment columns retain references before and after comple
   }
   // Missing actuals (skips) do not erase reference values; missing bests stay unknown.
   assert.equal(columnValue(model, 1, best, true).value, 50);
-  s.run.segments[1].bestSegmentTime = undefined; applyBridgeSnapshot(model, s, 0);
+  s.run.segments[1].bestSegmentTime = {}; applyBridgeSnapshot(model, s, 0);
   assert.equal(columnValue(model, 1, best, true).value, null);
 });
 
@@ -42,7 +41,7 @@ test('skip, undo, reset and run changes replace state without preserving obsolet
   const model = new RunReadout(), s = fixture();
   s.timer.splitIndex = 2; applyBridgeSnapshot(model, s, 0);
   assert.ok(Math.abs(segmentMetrics(model).segment! - 24.45) < .001);
-  s.attempt.segments.push(create(AttemptSegmentSchema, { index: 1, splitTime: { realTimeTicks: ticks(80) } }));
+  s.attempt.segments.push(attemptSegment(1, ticks(80)));
   applyBridgeSnapshot(model, s, 0); assert.ok(Math.abs(segmentMetrics(model).segment! - 3.45) < .001);
   s.timer.splitIndex = 1; applyBridgeSnapshot(model, s, 0); assert.equal(model.history.rows.get(1)?.time, undefined);
   s.timer.phase = TimerPhase.NOT_RUNNING; applyBridgeSnapshot(model, s, 0);
@@ -51,7 +50,7 @@ test('skip, undo, reset and run changes replace state without preserving obsolet
 });
 test('ended PB and sum of best can be restored without an earlier connection', () => {
   const model = new RunReadout(), s = fixture(); s.timer.phase = TimerPhase.ENDED; s.timer.splitIndex = 3; s.timer.realTimeTicks = ticks(170);
-  s.attempt.segments.push(create(AttemptSegmentSchema, { index: 2, splitTime: { realTimeTicks: ticks(170) } }));
+  s.attempt.segments.push(attemptSegment(2, ticks(170)));
   applyBridgeSnapshot(model, s, 0); assert.equal(recordStates(model).pb, true); assert.equal(model.comparisons.sumOfBest, 150);
   s.context.currentTimingMethod = TimingMethod.GAME_TIME; s.timer.isGameTimeInitialized = false;
   applyBridgeSnapshot(model, s, 0); assert.equal(model.liveTime, '—'); assert.equal(recordStates(model).pb, false);

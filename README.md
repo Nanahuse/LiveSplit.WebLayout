@@ -1,6 +1,6 @@
 # LiveSplit.WebLayout
 
-LiveSplit.Bridge Protocol v3を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・pnpm・HTTPサーバーは不要です。配布物のHTMLをローカルファイルとして直接開けます。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。
+LiveSplit.Bridge JSON Protocol v4を使う表示専用HTMLパーツ集です。TypeScript + Viteで開発し、利用時のNode.js・pnpm・HTTPサーバーは不要です。配布物のHTMLをローカルファイルとして直接開けます。LiveSplit内蔵WebSocketへの接続・フォールバック・操作RPCはありません。旧Protobuf v3には対応していないため、BridgeもJSON v4対応版に更新してください。独自HTMLの接続先に `/bridge/v3/rpc` を指定している場合は `/bridge/v4/rpc` に変更します。
 
 ## ビルド・起動
 
@@ -11,7 +11,7 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-ローカルファイル接続対応のLiveSplit.Bridge Protocol v3を起動して、`dist/index.html`を直接開いてください。既定のRPC接続先は`ws://127.0.0.1:54000/bridge/v3/rpc`です。OBSでは「ローカルファイル」に`dist/index.html`または透過タイマーの`dist/timer.html`を指定します。
+ローカルファイル接続対応のLiveSplit.Bridge Protocol v4を起動して、`dist/index.html`を直接開いてください。既定のRPC接続先は`ws://127.0.0.1:54000/bridge/v4/rpc`です。OBSでは「ローカルファイル」に`dist/index.html`または透過タイマーの`dist/timer.html`を指定します。
 
 HTMLと同じフォルダーに`livesplit.js`・`livesplit.css`を配置します。利用時のNode.js・HTTPサーバーは不要です。独自のレイアウトは次回ビルドで上書きされない別フォルダーに保存してください。
 

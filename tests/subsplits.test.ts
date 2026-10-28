@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { create } from '@bufbuild/protobuf';
 import { Window } from 'happy-dom';
 import { sectionsFor, subsplitName, subsplitRows, subsplitValue, sectionTimes, subsplitDefaults } from '../src/subsplits.ts';
 import { splitDefaults, subsplitSettings } from '../src/split-settings.ts';
 import { renderSplits, updateLiveSplits } from '../src/split-view.ts';
 import { applyBridgeSnapshot } from '../src/bridge-state.ts';
 import { RunReadout } from '../src/readout.ts';
-import { fixture, ticks } from './bridge-fixture.ts';
-import { AttemptSegmentSchema, TimerPhase } from '../src/generated/livesplit/bridge/v3/common_pb.ts';
+import { fixture, ticks, attemptSegment } from './bridge-fixture.ts';
+import { TimerPhase } from '../src/generated/protocol.ts';
 
 const names = ['-Road 1', '-Road 2', '{Stage 1}Boss', '-Road', '{Stage 2}Boss'];
 const settings = { ...splitDefaults, ...subsplitDefaults, ShowBlankSplits: false };
@@ -45,7 +44,7 @@ test('collapsed segment columns aggregate whole sections and use strict boundary
   assert.deepEqual(subsplitValue(run, row, col, true, true), { value: 1, delta: true });
   assert.deepEqual(subsplitValue(run, row, col, false, true), { value: 180, delta: false });
   s.timer.phase = TimerPhase.ENDED; s.timer.splitIndex = 3;
-  s.attempt.segments.push(create(AttemptSegmentSchema, { index: 2, splitTime: { realTimeTicks: ticks(175), gameTimeTicks: ticks(165) } }));
+  s.attempt.segments.push(attemptSegment(2, ticks(175), ticks(165)));
   applyBridgeSnapshot(run, s, 0);
   assert.deepEqual(subsplitValue(run, row, col, true, true), { value: -5, delta: true });
   assert.equal(subsplitValue(run, row, { ...col, type: 'SegmentTime' }, true, true).value, 175);

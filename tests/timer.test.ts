@@ -17,9 +17,9 @@ test('formats LiveSplit TimeSpan values without rounding ahead', () => {
 });
 
 test('accepts only valid WebSocket endpoints', () => {
-  assert.equal(getEndpoint(''), 'ws://127.0.0.1:54000/bridge/v3/rpc');
-  assert.equal(getEndpoint('?server=wss%3A%2F%2Fexample.com%2Fbridge%2Fv3%2Frpc'), 'wss://example.com/bridge/v3/rpc');
-  for (const server of ['https://example.com', 'no-url', 'ws://user:pass@localhost/', 'ws://localhost/#fragment']) {
+  assert.equal(getEndpoint(''), 'ws://127.0.0.1:54000/bridge/v4/rpc');
+  assert.equal(getEndpoint('?server=wss%3A%2F%2Fexample.com%2Fbridge%2Fv4%2Frpc'), 'wss://example.com/bridge/v4/rpc');
+  for (const server of ['https://example.com', 'no-url', 'ws://user:pass@localhost/', 'ws://localhost/#fragment', 'ws://localhost/bridge/v3/rpc', 'ws://localhost/bridge/v4/rpc?x=1']) {
     assert.throws(() => getEndpoint(`?server=${encodeURIComponent(server)}`));
   }
 });

@@ -56,7 +56,7 @@ export function renderReadout(run: RunReadout, root: ParentNode) {
   set('phase', phases[phase ?? ''] ?? '—');
   set('game', get('getgamename') ?? 'ゲーム情報未取得');
   set('category', get('getcategoryname') ?? 'カテゴリ情報未取得');
-  set('readout-note', phase ? 'LiveSplit.Bridge v3から同期しています。' : 'LiveSplit.Bridge v3への接続を待っています。');
+  set('readout-note', phase ? 'LiveSplit.Bridge v4から同期しています。' : 'LiveSplit.Bridge v4への接続を待っています。');
   set('method', ({ RealTime: 'Real Time', GameTime: 'Game Time' })[get('gettimingmethod') ?? ''] ?? '—');
   set('comparison', get('getcomparisonname') ?? '—');
   set('attempts', get('getattemptcount') ?? '—');
