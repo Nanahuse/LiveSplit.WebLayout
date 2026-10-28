@@ -4,6 +4,8 @@ LiveSplit.Bridge JSON Protocol v4を使う表示専用HTMLパーツ集です。T
 
 ## ビルド・起動
 
+利用するだけなら[GitHub Releases](https://github.com/Nanahuse/LiveSplit.WebLayout/releases)の配布ZIPを展開し、`dist/index.html`または`dist/timer.html`を開いてください。Node.js・pnpmは不要です。
+
 開発にはNode.js 22.12以降とpnpm 12.9.1を使用します。
 
 ```sh

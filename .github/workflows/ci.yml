@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify generated protocol
+        run: |
+          pnpm run generate:protocol
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code -- src/generated/protocol.ts
+
+      - name: Type check and build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Package and verify distribution
+        run: ./scripts/package-release.ps1
+
+      - name: Save checked release package
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-package
+          path: |
+            artifacts/LiveSplit.WebLayout-v*.zip
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Release
+    needs: checks
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out checked commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Determine release tag
+        id: tag
+        run: |
+          $version = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
+          if ($version -cnotmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            throw "Invalid release version: $version"
+          }
+          $tag = "v$version"
+          $refs = git ls-remote --exit-code --tags origin "refs/tags/$tag"
+          $status = $LASTEXITCODE
+          if ($status -eq 0) {
+            Write-Host "Tag $tag already exists; skipping release."
+            "exists=true" >> $env:GITHUB_OUTPUT
+          } elseif ($status -eq 2) {
+            "exists=false" >> $env:GITHUB_OUTPUT
+          } else {
+            throw "Failed to check release tag $tag (git exit $status)."
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          # ls-remote uses exit 2 to report an absent tag; this is a successful check.
+          exit 0
+
+      - name: Download checked release package
+        if: steps.tag.outputs.exists == 'false'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-package
+          path: artifacts
+
+      - name: Publish release and version tag
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          $tag = $env:RELEASE_TAG
+          $asset = "artifacts/LiveSplit.WebLayout-$tag.zip"
+          $expected = (Get-Content -LiteralPath artifacts/SHA256SUMS.txt -Raw).Trim()
+          $hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expected -cne "$hash  LiveSplit.WebLayout-$tag.zip") {
+            throw 'Release package checksum mismatch.'
+          }
+          gh release create "$tag" "$asset" artifacts/SHA256SUMS.txt `
+            --target "$env:GITHUB_SHA" `
+            --title "LiveSplit.WebLayout $tag" `
+            --generate-notes
