@@ -13,7 +13,7 @@
 
 ## 接続できない・タイマーが動かない
 
-接続を確認したい部品と同じ `server` の `<livesplit-status>` を追加します。
+接続を確認したい部品と同じ `server` を指定した `<livesplit-status>` を追加します。
 
 ```html
 <livesplit-timer server="ws://127.0.0.1:54000/bridge/v4/rpc"></livesplit-timer>
@@ -21,10 +21,10 @@
 ```
 
 - 「接続中」「再接続待ち」: LiveSplitの現在のレイアウトにBridgeが追加され、Bridgeの設定が `Status: Running` になっているか確認します。JSON Protocol v4・ローカルファイル接続に対応したBridgeが必要です。
-- Bridgeが `Status: Failed` の場合: 設定画面のエラーを確認します。ポートが使用中なら別のポートに変更して `Apply` を押し、HTML側も同じポートにします。LiveSplitのレイアウトも保存してください。
+- Bridgeが `Status: Failed` の場合は設定画面のエラーを確認します。ポートが使用中なら別のポートに変更して `Apply` を押し、HTML側も同じポートにします。LiveSplitのレイアウトも保存してください。
 - 接続先: ホスト・ポート・`/bridge/v4/rpc` を確認します。Eventsの `/bridge/v4/events` にも同じポートで接続できる必要があります。Bridgeは同じPCからの接続専用なので、ブラウザー・OBSもLiveSplitと同じPCで起動します。
 - 接続の優先順位: 各部品の `server`、ページURLの `?server=…`、既定値の順です。別の接続先を指定した部品が混在していないか確認します。
-- 「接続済み」なのに時計が止まる: LiveSplit側の待機・一時停止・完走状態、選択中の計測方法を確認します。Game Timeだけを一時停止している場合、その時計は進みません。
+- 「接続済み」なのに時計が止まる場合はLiveSplit側の待機・一時停止・完走状態、選択中の計測方法を確認します。Game Timeだけを一時停止している場合、その時計は進みません。
 
 切断後は自動で再接続します。時計や表示データは再取得されます。詳細は[接続設定](connection.md)を参照してください。
 
@@ -33,7 +33,7 @@
 表示された項目名を手掛かりに、該当部品の設定表を確認します。
 
 - `settings` はJSONオブジェクトです。HTML属性をシングルクォート、JSONのキー・文字列をダブルクォートで囲み、末尾の余分なカンマを除きます。
-- 数値・真偽値の型を確認します。例: `"VisualSplitCount":6`、`"ShowColumnLabels":true`。
+- 数値・真偽値の型を確認します。例えば `"VisualSplitCount":6`、`"ShowColumnLabels":true` と指定します。
 - 設定名は大文字・小文字を区別します。他の部品の設定やLiveSplit本体の全設定をそのまま渡すことはできません。
 - 接続先は `ws://` または `wss://` のBridge v4 RPC URLにします。URL内のクエリなどは使えません。
 - Splitsの `Columns` は0〜32列の配列です。[列設定](components/splits/columns.md)でType・TimingMethodを確認します。
@@ -57,7 +57,7 @@
 
 1. 編集したHTMLを保存し、ブラウザーやOBSのブラウザソースを再読み込みします。読み込んでいるHTMLのパスも確認します。
 2. 独自CSSを `livesplit.css` の後に読み込みます。同じ部品を個別に装飾する場合はclassを付けます。
-3. 対象部品に対応した変数か確認します。Timerは `--ls-timer-size`、ラベル付きの値は `--ls-value-size`、Splits全体の幅は `--ls-splits-width` です。
+3. 指定した変数が対象の部品で使えるか確認します。Timerは `--ls-timer-size`、ラベル付きの値は `--ls-value-size`、Splits全体の幅は `--ls-splits-width` です。
 4. Detailed Timer・Hotkey Indicatorの見た目は公開CSS変数 → settings → 既定値の順です。差分色・記録色・状態色が通常色に優先する場合もあります。
 5. `label`・`layout="row"` は対応部品にのみ適用されます。独自HTMLでは配置を自分のCSSで指定します。
 

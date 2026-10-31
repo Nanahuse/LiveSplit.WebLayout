@@ -56,6 +56,6 @@ livesplit-value [data-ls-value] { font-size: 24px; }
 
 ## 動作・制限
 
-`possible-time-save` / `previous-segment-delta`の計算・設定反映には、それぞれ[Possible Time Save](../metrics/possible-time-save.md) / [Previous Segment](../metrics/previous-segment.md)の専用タグを使ってください。汎用Valueにfieldだけを指定しても専用の描画処理は実行されません。
+`possible-time-save` / `previous-segment-delta`の計算・設定反映にはそれぞれ[Possible Time Save](../metrics/possible-time-save.md) / [Previous Segment](../metrics/previous-segment.md)の専用タグを使ってください。汎用Valueにfieldだけを指定しても専用の描画処理は実行されません。
 
 [共通設定](../common.md) / [部品一覧](../README.md)

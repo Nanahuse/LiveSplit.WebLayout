@@ -44,7 +44,7 @@ Best Possible Time、Delta、区間時計、ペース、Sum of Best、回数、�
 
 `label` / `hide-label` でラベルを変更・非表示にし、`layout="row"` で左右配置にします。通常は上下配置ですが、Possible Time Save・Previous Segmentは左右配置が既定です。この2つは `settings.Display2Rows` で上下配置にします。Hotkey Indicatorは `layout="row"` の対象外です。
 
-ラベルと値の配置は既定テンプレートに対応します。独自HTMLでは通常のCSSで配置してください。
+これらの配置設定は既定テンプレートで使えます。独自HTMLでは通常のCSSで配置してください。
 
 ## 部品固有の変数
 

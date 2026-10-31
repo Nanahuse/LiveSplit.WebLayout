@@ -28,7 +28,7 @@
 
 ## 属性と優先順位
 
-`Columns`は[列設定](columns.md)を参照してください。`total-splits` / `upcoming-splits` / `always-show-last-split`属性は、それぞれ対応するsettingsより優先します。最終区間固定を無効にするには`always-show-last-split="false"`を指定します。表示行数は1〜1000、先読み行数は0以上の整数で、先読みは利用できる表示行数に収まるよう調整されます。
+`Columns` の設定は[列設定](columns.md)を参照してください。`total-splits` / `upcoming-splits` / `always-show-last-split`属性はそれぞれ対応するsettingsより優先します。最終区間固定を無効にするには`always-show-last-split="false"`を指定します。表示行数は1〜1000、先読み行数は0以上の整数で、先読みは利用できる表示行数に収まるよう調整されます。
 
 `live-delta="false"`で現在区間のライブ差分を無効にできます。省略時は有効です。
 
@@ -44,7 +44,7 @@ Bridgeの個別Best SegmentとBest Segments比較を使ってライブ差分の�
 
 ## CSSの対象属性
 
-セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、`data-column-type` は[列設定](columns.md)のtypeです。現在区間のセルには `data-live-column`、行には `data-split-index` が付きます。列を装飾する例:
+セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、`data-column-type` は[列設定](columns.md)のtypeです。現在区間のセルには `data-live-column`、行には `data-split-index` が付きます。列は次のように装飾できます。
 
 ```css
 livesplit-splits [data-column="comparison-time"] { opacity: .65; }

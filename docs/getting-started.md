@@ -6,7 +6,7 @@
 
 [GitHub Releases](https://github.com/Nanahuse/LiveSplit.WebLayout/releases)のAssetsから `LiveSplit.WebLayout-vX.Y.Z.zip` をダウンロードし、任意のフォルダーに展開します。ソースコードのZIPではなく、ビルド済みの配布ZIPを選んでください。
 
-表示に使うファイルは、展開先の `dist/` にあります。
+表示に使うファイルは展開先の `dist/` にあります。
 
 | ファイル | 用途 |
 | --- | --- |
@@ -19,7 +19,7 @@ ZIPにはREADME、ドキュメント、ライセンス、`VERSION.txt`も含ま�
 
 ## 2. LiveSplit.Bridgeを準備する
 
-ローカルファイルからの接続に対応した **JSON Protocol v4のLiveSplit.Bridge** を使います。LiveSplitと、表示するブラウザー・OBSは同じPCで起動してください。
+ローカルファイルからの接続に対応した **JSON Protocol v4のLiveSplit.Bridge** を使います。LiveSplitと表示に使うブラウザー・OBSは同じPCで起動してください。
 
 1. [BridgeのReleases](https://github.com/Nanahuse/LiveSplit.Bridge/releases)から対応版の `LiveSplit.Bridge-v*.zip` を取得します。
 2. LiveSplitを終了し、ZIP内の `LiveSplit.Bridge.dll` をLiveSplitの `Components` フォルダーに置きます。
@@ -49,7 +49,7 @@ Bridge自体はレイアウトに表示されません。対応環境や更新�
 
 ## 5. 自分のレイアウトを作る
 
-`index.html` または `timer.html` と `livesplit.js`・`livesplit.css` を、同じ別フォルダーにコピーします。HTMLを編集して保存し、ブラウザーやOBSでそのHTMLを読み込み直します。編集後の再ビルドは不要です。
+`index.html` または `timer.html` を選び、`livesplit.js`・`livesplit.css` と一緒に別フォルダーへコピーします。HTMLを編集して保存し、ブラウザーやOBSでそのHTMLを読み込み直します。編集後の再ビルドは不要です。
 
 開発時の `dist/` は次のビルドで置き換わるため、自分のレイアウトは別フォルダーに保存してください。基本のHTML、部品の追加、属性・CSSの変更は[カスタマイズ](customization.md)で説明します。
 

@@ -35,7 +35,7 @@
 | Phase / Comparison / Timing Method | 走行状態 / 比較対象 / 計測方法 |
 | Hotkey Indicator | Global Hotkeys |
 
-Possible Time Save・Previous Segmentで比較名を明示した場合は、既定ラベルに比較名を付記します。`label` 属性を指定した文字列は自動ラベルより優先されます。
+Possible Time Save・Previous Segmentで比較名を明示した場合は、既定ラベルに比較名を付記します。`label` 属性で指定した文字列は自動ラベルより優先されます。
 
 ## 配置例
 
@@ -48,6 +48,6 @@ Possible Time Save・Previous Segmentで比較名を明示した場合は、既�
 
 未取得・未設定の数値は原則「—」です。待機中や欠損時の扱いは部品によって異なります。接続状態は`data-state="connecting|connected|disconnected|error"`、通信不要の固定Textは`static`になります。これらは出力属性なので、CSSの選択条件として利用してください。
 
-settingsのキーは大文字・小文字を区別します。数値・真偽値はJSONの数値・真偽値で渡してください。対応しない設定や不正な型では設定エラーになる部品があります。[カスタマイズ](../customization.md)にJSONの記述例があります。
+settingsのキーは大文字・小文字を区別します。数値・真偽値はJSONの数値・真偽値で渡してください。未対応の設定や不正な型を指定すると、設定エラーになる部品があります。[カスタマイズ](../customization.md)にJSONの記述例があります。
 
 [共通CSS](../css/common.md) / [独自HTML](custom-markup.md) / [部品一覧](README.md)

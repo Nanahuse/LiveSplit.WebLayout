@@ -60,7 +60,7 @@ Deltaは累積差分、Previous Segmentは直前区間の差分、Textは任意�
 <livesplit-delta label="比較との差" layout="row"></livesplit-delta>
 ```
 
-ラベル付き部品は `label` でラベルを変更でき、`hide-label` を付けるとラベルを隠せます。`layout="row"` はラベルと値を左右に並べます。通常は上下配置ですが、Previous SegmentとPossible Time Saveは左右配置が既定です。この2つを上下配置にする方法は次のsettingsの例を参照してください。
+ラベル付き部品は `label` でラベルを変更でき、`hide-label` を付けるとラベルを隠せます。`layout="row"` はラベルと値を左右に並べます。通常は上下配置ですが、Previous SegmentとPossible Time Saveは左右配置が既定です。この2つを上下配置にする方法は「settingsで表示内容を変える」の例を参照してください。
 
 TimerやGameなどにはこのラベル配置設定はありません。共通属性の対象は[部品の共通設定](components/common.md)で確認できます。
 
@@ -89,7 +89,7 @@ livesplit-delta {
 
 ## 5. settingsで表示内容を変える
 
-`settings` は、対応する部品にJSONオブジェクトを渡す属性です。Previous SegmentとSplitsを次のように置き換えると、短縮可能時間の併記と区間表の行数を設定できます。
+`settings` は対応する部品にJSONオブジェクトを渡す属性です。Previous SegmentとSplitsを次のように置き換えると、短縮可能時間の併記と区間表の行数を設定できます。
 
 ```html
 <livesplit-previous-segment label="直前の差分"
@@ -97,7 +97,7 @@ livesplit-delta {
 <livesplit-splits settings='{"VisualSplitCount":6,"ShowColumnLabels":true}'></livesplit-splits>
 ```
 
-HTML属性はシングルクォートで囲み、JSONのキー・文字列はダブルクォートで囲みます。真偽値の `true`・`false` と数値は引用符で囲みません。設定名は大文字・小文字を区別し、使える項目は部品ごとに異なります。LiveSplit本体のレイアウト設定は自動で読み込みません。
+属性値はシングルクォートで囲み、JSONのキー・文字列はダブルクォートで囲みます。真偽値の `true`・`false` と数値は引用符で囲みません。設定名は大文字・小文字を区別し、使える項目は部品ごとに異なります。LiveSplit本体のレイアウト設定は自動で読み込みません。
 
 区間表の列を変更する場合は[Splitsの列設定](components/splits/columns.md)へ進んでください。
 
@@ -115,7 +115,7 @@ HTML属性はシングルクォートで囲み、JSONのキー・文字列はダ
 
 ## 7. 保存して使う
 
-HTMLと追加したCSSを保存し、ブラウザーを再読み込みします。OBSでは作業用の `layout.html` をブラウザソースのローカルファイルに指定し、ソースを再読み込みしてください。幅・高さはこの例なら幅480pxを目安に、内容が収まるよう調整します。
+HTMLと追加したCSSを保存し、ブラウザーを再読み込みします。OBSでは作業用の `layout.html` をブラウザソースのローカルファイルに指定し、ソースを再読み込みしてください。幅はこの例の480pxを目安にし、高さは内容が収まるよう調整します。
 
 この例はブラウザーでも文字を確認しやすい暗い背景です。OBSで背景を透過する場合は、bodyの指定を `background: transparent;` に変更します。
 

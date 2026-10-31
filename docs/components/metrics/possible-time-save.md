@@ -1,6 +1,6 @@
 # Possible Time Save
 
-`<livesplit-possible-time-save>` — 比較の区間時間から個別Best Segmentを引き、負なら0にした短縮可能時間です。
+`<livesplit-possible-time-save>` は比較の区間時間から個別Best Segmentを引き、負なら0にした短縮可能時間です。
 
 ## 最小使用例
 
@@ -21,7 +21,7 @@
 
 ## 属性・settings
 
-`label`でラベル変更、`hide-label`でラベル非表示、`layout="row"`で左右配置にできます。型・既定の配置は[共通設定](../common.md)を参照してください。
+`label`でラベル変更、`hide-label`でラベル非表示、`layout="row"`で左右配置にできます。属性の型と既定の配置は[共通設定](../common.md)を参照してください。
 
 | 設定 | 型 | 既定値 | 用途 |
 | --- | --- | --- | --- |
@@ -37,7 +37,7 @@ TotalTimeSaveは待機中に全区間、走行中に残り区間を合計しま�
 
 ラベルは`.ls-label`、値は`.ls-value`です。`--ls-label-size` / `--ls-label-color` / `--ls-label-font`、`--ls-value-size` / `--ls-value-color` / `--ls-value-font`、`--ls-label-gap`を利用できます。枠・背景・余白は[共通CSS](../../css/common.md)を参照してください。
 
-独自テンプレートの値は`data-ls-field="possible-time-save"`です。この専用タグの内側で使用してください。専用settingsと計算は汎用Valueでは実行されません。
+独自テンプレートでは値を表示する要素に`data-ls-field="possible-time-save"`を指定します。この専用タグの内側で使用してください。専用settingsと計算は汎用Valueでは実行されません。
 
 ## 動作・制限
 

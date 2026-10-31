@@ -59,7 +59,7 @@ Splitsの列の表示分岐は公式の[SplitComponent.UpdateColumn](https://git
 
 GitHub ActionsはPR・mainへのpush・手動実行で、WindowsとLinux上のNode.js 24を使い、固定ロックファイルでの依存導入、公式Schemaからの再生成と差分確認、型チェック、ビルド、全テスト、配布ZIPの作成・内容検証を行います。`test:live`は起動中のLiveSplitが必要なためCIの対象外です。
 
-バージョンの正本は `package.json` の `version`（`X.Y.Z`形式）です。mainのチェックがすべて成功した後、`vX.Y.Z`タグが存在しなければ、検証したコミットにタグを発行し、GitHub Releaseを自動公開します。既存タグがあれば公開をスキップし、タグ照会などの通信エラーは失敗として扱います。リリース処理は直列化され、PRからは公開しません。mainを指定した手動実行でも同じ処理を再試行できます。
+バージョンの基準は `package.json` の `version`（`X.Y.Z`形式）です。mainのチェックがすべて成功した後、`vX.Y.Z`タグが存在しなければ、検証したコミットにタグを発行し、GitHub Releaseを自動公開します。既存タグがあれば公開をスキップし、タグ照会などの通信エラーは失敗として扱います。リリース処理は直列化され、PRからは公開しません。mainを指定した手動実行でも同じ処理を再試行できます。
 
 配布物は `LiveSplit.WebLayout-vX.Y.Z.zip` と `SHA256SUMS.txt` です。ZIPには `dist/` のHTML・JS・CSS、README、ドキュメント、Bridge由来コードのライセンス、`VERSION.txt`を含めます。リリースジョブはCIで検証したZIPをそのまま使用します。ローカルでは `pnpm build` の後、PowerShell 7で `./scripts/package-release.ps1` を実行すると `artifacts/` に同じ形式で作成できます。
 

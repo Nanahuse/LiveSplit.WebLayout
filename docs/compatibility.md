@@ -31,7 +31,7 @@
 
 互換性のため、`columns` 属性のJSON配列と小文字のキー（`name` / `type` / `comparison` / `timingMethod` / `width`）も受け付けます。`columns` 属性は `settings.Columns` より優先します。新しく設定する場合は[Splitsの列設定](components/splits/columns.md)の `settings.Columns` を使用してください。
 
-旧 `comparisons="Personal Best|Best Segments"` は、比較ごとの比較累積タイム・差分とLiveTimeを組み合わせた従来の独自列セットを明示的に使う互換指定です。公式互換の列設定には使わず、`Columns` の各列でTypeとComparisonを指定します。設定なしの場合は比較名から列を自動生成せず、累積差分とSplit Timeの2列になります。
+旧 `comparisons="Personal Best|Best Segments"` は比較ごとの比較累積タイム・差分とLiveTimeを組み合わせた従来の独自列セットを明示的に使う互換指定です。公式互換の列設定には使わず、`Columns` の各列でTypeとComparisonを指定します。設定なしの場合は比較名から列を自動生成せず、累積差分とSplit Timeの2列になります。
 
 ## 記録色の旧動作との差異
 

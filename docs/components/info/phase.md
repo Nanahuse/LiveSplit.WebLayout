@@ -1,6 +1,6 @@
 # Phase
 
-`<livesplit-phase>` — 走行状態を「待機中」「計測中」「一時停止」「完走」で表示します。
+`<livesplit-phase>` は走行状態を「待機中」「計測中」「一時停止」「完走」で表示します。
 
 ## 最小使用例
 
@@ -17,7 +17,7 @@
 
 ## 属性・settings
 
-`label`でラベル変更、`hide-label`でラベル非表示、`layout="row"`で左右配置にできます。型・既定の配置は[共通設定](../common.md)を参照してください。
+`label`でラベル変更、`hide-label`でラベル非表示、`layout="row"`で左右配置にできます。属性の型と既定の配置は[共通設定](../common.md)を参照してください。
 
 この部品固有のsettingsはありません。
 
@@ -25,7 +25,7 @@
 
 ラベルは`.ls-label`、値は`.ls-value`です。`--ls-label-size` / `--ls-label-color` / `--ls-label-font`、`--ls-value-size` / `--ls-value-color` / `--ls-value-font`、`--ls-label-gap`を利用できます。枠・背景・余白は[共通CSS](../../css/common.md)を参照してください。
 
-独自テンプレートの値は`data-ls-field="phase"`です。ラベル不要なら`<livesplit-value field="phase"></livesplit-value>`でも表示できます。
+独自テンプレートでは値を表示する要素に`data-ls-field="phase"`を指定します。ラベルが不要なら`<livesplit-value field="phase"></livesplit-value>`でも表示できます。
 
 ## 動作・制限
 
