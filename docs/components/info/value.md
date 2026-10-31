@@ -2,11 +2,27 @@
 
 任意の表示値をラベルなしで配置します。`field`省略時は`phase`です。
 
+## 最小使用例
+
+```html
+<livesplit-value></livesplit-value>
+```
+
+## カスタマイズ例
+
 ```html
 <livesplit-value field="best-possible" style="font-size:32px"></livesplit-value>
 ```
 
-## field一覧
+## 属性・settings
+
+| 属性 | 型 | 既定値 | 内容 |
+| --- | --- | --- | --- |
+| `field` | 文字列 | phase | 表示する項目。下表から指定 |
+
+この部品固有のsettingsはありません。`server` などは[共通設定](../common.md)を参照してください。
+
+### field一覧
 
 | field | 内容 |
 | --- | --- |
@@ -28,8 +44,6 @@
 | `real-time` / `game-time` | 各計測方式の時計 |
 | `hotkey-status` | 現状は取得不可 |
 
-`possible-time-save` / `previous-segment-delta`の計算・設定反映には、それぞれ[Possible Time Save](../metrics/possible-time-save.md) / [Previous Segment](../metrics/previous-segment.md)の専用タグを使ってください。汎用Valueにfieldだけを指定しても専用の描画処理は実行されません。
-
 ## CSS・独自HTML
 
 共通CSS変数と通常の`font-size`を使います。既定テンプレートの対象は`[data-ls-value]`です。ラベル付き部品専用の`--ls-value-size`は直接適用されません。
@@ -39,5 +53,9 @@ livesplit-value [data-ls-value] { font-size: 24px; }
 ```
 
 独自HTMLには`<span data-ls-value></span>`を置くと、field属性の変更に追従します。任意の固定フィールドには`data-ls-field`も使用できます。
+
+## 動作・制限
+
+`possible-time-save` / `previous-segment-delta`の計算・設定反映にはそれぞれ[Possible Time Save](../metrics/possible-time-save.md) / [Previous Segment](../metrics/previous-segment.md)の専用タグを使ってください。汎用Valueにfieldだけを指定しても専用の描画処理は実行されません。
 
 [共通設定](../common.md) / [部品一覧](../README.md)
