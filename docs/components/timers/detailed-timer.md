@@ -2,6 +2,14 @@
 
 全体タイマー・現在区間名・区間タイマー・2つの比較区間タイムを表示します。
 
+## 最小使用例
+
+```html
+<livesplit-detailed-timer></livesplit-detailed-timer>
+```
+
+## カスタマイズ例
+
 ```html
 <livesplit-detailed-timer comparison1="Personal Best" comparison2="Best Segments"
   settings='{"ShowSplitName":true,"SegmentAccuracy":".2","DecimalsSize":50}'
@@ -12,20 +20,20 @@
 
 `comparison1` / `comparison2`属性は対応するsettingsより優先します。
 
-| 設定 | 既定値・用途 |
-|---|---|
-| `Comparison` / `Comparison2` | Current Comparison / Best Segments |
-| `HideComparison` | false。trueで比較2のみ非表示 |
-| `ShowSplitName` | false。現在区間名を表示 |
-| `DigitsFormat` / `SegmentDigitsFormat` | 1。1 / 1:23 / 1:23:45から最低桁数を選択 |
-| `Accuracy` / `SegmentAccuracy` | .23。空文字／.2／.23で秒／1桁／2桁 |
-| `SegmentTimesAccuracy` | Hundredths。Seconds / Tenths / Hundredths |
-| `SegmentTimerSizeRatio` | 40。区間時計のサイズ比率（%） |
-| `DecimalsSize` / `SegmentTimerDecimalsSize` | 35。各時計の小数サイズ（%） |
+| 設定 | 型 | 既定値 | 用途 |
+| --- | --- | --- | --- |
+| `Comparison` / `Comparison2` | 文字列 | Current Comparison / Best Segments | 比較1・比較2の比較名 |
+| `HideComparison` | 真偽値 | false | trueで比較2のみ非表示 |
+| `ShowSplitName` | 真偽値 | false | 現在区間名を表示 |
+| `DigitsFormat` / `SegmentDigitsFormat` | 文字列 | 1 | 1 / 1:23 / 1:23:45から最低桁数を選択 |
+| `Accuracy` / `SegmentAccuracy` | 文字列 | .23 | 空文字／.2／.23で秒／1桁／2桁 |
+| `SegmentTimesAccuracy` | 文字列 | Hundredths | 比較欄の精度。Seconds / Tenths / Hundredths |
+| `SegmentTimerSizeRatio` | 数値 | 40 | 区間時計のサイズ比率（%）。0〜1000 |
+| `DecimalsSize` / `SegmentTimerDecimalsSize` | 数値 | 35 | 各時計の小数サイズ（%）。0〜1000 |
 
-比較欄は待機中に最初、走行中に現在、完走後に最終区間の参照値を表示します。Best SegmentsはBridgeの個別Best Segment、他の比較は比較の区間時間です。未設定は「—」。アイコンと、本体と異なる計測方法の選択は未対応です。
+`comparison1` / `comparison2` は文字列属性です。省略時は上表のComparison / Comparison2を使用します。共通の `server`・記録色属性は[共通設定](../common.md)を参照してください。
 
-## CSS
+## CSS・独自HTML
 
 | 変数・対象 | 用途 |
 |---|---|
@@ -41,5 +49,9 @@
 公開CSS変数 → settings → 既定値の順に優先します。`--ls-setting-*`は内部用です。[PB・状態色](../../css/record-colors.md)が時計の基本色に優先します。
 
 独自HTMLでは全体時計に`data-ls-field="whole|fraction"`、区間時計に`data-segment-whole` / `data-segment-fraction`、比較名と値に`data-comparison-label="1|2"` / `data-comparison-value="1|2"`を配置します。各`|`は選択肢を示し、属性値には片方を指定します。
+
+## 動作・制限
+
+比較欄は待機中に最初、走行中に現在、完走後に最終区間の参照値を表示します。Best SegmentsはBridgeの個別Best Segment、他の比較は比較の区間時間です。未設定は「—」。アイコンと、本体と異なる計測方法の選択は未対応です。
 
 [共通設定](../common.md) / [部品一覧](../README.md)

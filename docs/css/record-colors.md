@@ -10,7 +10,18 @@ Timer、Detailed Timer、区間タイマー、直前区間タイム、Splitsの�
 <livesplit-splits bs-effect="rainbow"></livesplit-splits>
 ```
 
-指定色は`--ls-pb-color`（既定青 `#16a6ff`）・`--ls-bs-color`（既定金 `#ffd700`）、レインボーの周期は`--ls-rainbow-duration`（既定3.6s）です。色相を一巡させる表現は公式の[GetBestSegmentColor](https://github.com/LiveSplit/LiveSplit/blob/master/src/LiveSplit.Core/Model/LiveSplitStateHelper.cs)を参考に、CSSで滑らかに変化させています。OSで動きを減らす設定が有効な場合は指定色に固定します。
+## 色と効果
+
+| 指定 | 型 | 既定値 | 用途 |
+| --- | --- | --- | --- |
+| `pb-effect` / `bs-effect` | 属性の文字列 | color | `color` / `rainbow` / `none` から選択 |
+| `--ls-pb-color` | CSSの色 | #16a6ff | PBの指定色（青） |
+| `--ls-bs-color` | CSSの色 | #ffd700 | Best Segmentの指定色（金） |
+| `--ls-rainbow-duration` | CSSの時間 | 3.6s | レインボーの周期 |
+
+OSで動きを減らす設定が有効な場合、レインボーは指定色に固定します。PBのレインボーはこのWeb版の拡張です。
+
+## 判定と表示タイミング
 
 | 対象 | 記録色のタイミング |
 |---|---|
@@ -21,8 +32,12 @@ Timer、Detailed Timer、区間タイマー、直前区間タイム、Splitsの�
 
 TimerのPB色は完走時の選択中比較とAttemptの最終実測値から判定します。同タイムはPB色にしません。BSは個別Best Segmentの未設定・更新、またはBest Segmentsに対する区間差分が負の場合に判定します。
 
-PBのレインボーはこのWeb版の拡張です。以前のPersonal Best固定判定とBS直後2秒間のタイマー強調は、公式の挙動と異なるため廃止しました。リセット・切断・不整合な取得状態では効果を解除します。`data-record="pb|bs"`と`data-record-effect`で独自のCSS効果にも差し替えられます。
+リセット・切断・不整合な取得状態では効果を解除します。`data-record="pb|bs"`と`data-record-effect`で独自のCSS効果にも差し替えられます。
+
+## タイマーの状態色
 
 Timerの状態色は公式の優先順位（待機／負の時計 → ポーズ → 完走 → 走行中）に従います。走行中は現在累積差分の正負と直前差分から先行・遅延／回復・悪化を判定します。色は`--ls-not-running-color`、`--ls-paused-color`、`--ls-ahead-gaining-color`、`--ls-ahead-losing-color`、`--ls-behind-gaining-color`、`--ls-behind-losing-color`で変更できます。イベント直後はAttempt取得が完了するまで記録色の反映を保留します。
+
+過去の記録色との差異は[対応範囲と移行](../compatibility.md)、実装の参照元は[開発・検証](../development.md)にまとめています。
 
 [CSS目次](README.md)
