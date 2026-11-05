@@ -1,52 +1,56 @@
-# 導入・配置
+# 導入ガイド
 
-開発者のみNode.js 22.12以降とpnpm 12.9.1が必要です。
+配布ZIPを展開し、LiveSplit.Bridgeを起動すると、ブラウザーやOBSで表示できます。利用時のNode.js・pnpm・HTTPサーバーは不要です。
 
-```sh
-pnpm install --frozen-lockfile
-pnpm run build
-```
+## 1. 配布ZIPを取得する
 
-`dist/` に次のファイルを出力します。
+[GitHub Releases](https://github.com/Nanahuse/LiveSplit.WebLayout/releases)のAssetsから `LiveSplit.WebLayout-vX.Y.Z.zip` をダウンロードし、任意のフォルダーに展開します。ソースコードのZIPではなく、ビルド済みの配布ZIPを選んでください。
+
+表示に使うファイルは展開先の `dist/` にあります。
 
 | ファイル | 用途 |
 | --- | --- |
-| `livesplit.js` | パーツを登録する通常のJavaScript。`type="module"`不要 |
-| `livesplit.css` | 任意の初期スタイル。編集・差し替え・省略可能 |
-| `index.html` | 全パーツの配置例。レイアウトやデザインはこのHTMLで編集 |
+| `index.html` | 全パーツの配置例。最初の表示確認に使用 |
 | `timer.html` | OBS向けの透過タイマーだけの配置例 |
+| `livesplit.js` | 表示パーツを登録するJavaScript。HTMLと一緒に配置 |
+| `livesplit.css` | 初期スタイル。HTMLと一緒に配置。編集・差し替え・省略も可能 |
 
-LiveSplitにローカルファイルからの接続に対応したProtocol v4のLiveSplit.Bridgeを追加して起動してください。RPCの既定接続先は `ws://127.0.0.1:54000/bridge/v4/rpc`、Eventsは同じポートの `/bridge/v4/events` です。
+ZIPにはREADME、ドキュメント、ライセンス、`VERSION.txt`も含まれます。ソースからビルドする場合は[開発・検証](development.md)を参照してください。
 
-ブラウザーで `dist/index.html` を直接開いてください。OBSではブラウザソースの「ローカルファイル」を有効にして `dist/index.html` または透過タイマーの `dist/timer.html` を指定します。HTTP経由での表示も引き続き利用できます。
+## 2. LiveSplit.Bridgeを準備する
 
-配布物を編集しても再ビルドは不要です。ただし次のビルドで `dist/` は置き換わるため、自分のレイアウトは別フォルダーに保存してください。従来の単一HTML配布から変更しています。JS・CSSも一緒に配置してください。
+ローカルファイルからの接続に対応した **JSON Protocol v4のLiveSplit.Bridge** を使います。LiveSplitと表示に使うブラウザー・OBSは同じPCで起動してください。
 
-## HTMLへの配置
+1. [BridgeのReleases](https://github.com/Nanahuse/LiveSplit.Bridge/releases)から対応版の `LiveSplit.Bridge-v*.zip` を取得します。
+2. LiveSplitを終了し、ZIP内の `LiveSplit.Bridge.dll` をLiveSplitの `Components` フォルダーに置きます。
+3. LiveSplitを起動し、右クリックの `Edit Layout...` を開きます。
+4. `+` → `Control` → `LiveSplit Bridge` を選んで追加し、レイアウトを保存します。
+5. Bridgeの設定で `Status: Running` を確認し、表示したいゲーム・区間をLiveSplitで読み込みます。
 
-```html
-<!doctype html>
-<html lang="ja">
-<meta charset="utf-8">
-<link rel="stylesheet" href="./livesplit.css">
-<script defer src="./livesplit.js"></script>
+Bridge自体はレイアウトに表示されません。対応環境や更新方法は[Bridgeの導入説明](https://github.com/Nanahuse/LiveSplit.Bridge#インストール)を参照してください。
 
-<livesplit-game></livesplit-game>
-<livesplit-splits></livesplit-splits>
-<livesplit-timer></livesplit-timer>
-<p>比較との差 <livesplit-value field="delta"></livesplit-value></p>
-<livesplit-status></livesplit-status>
-</html>
-```
+既定のRPC接続先は `ws://127.0.0.1:54000/bridge/v4/rpc` です。同じポートの `/bridge/v4/events` にも自動で接続します。Bridge側で接続先やポートを変更している場合は[接続設定](connection.md)に従って指定します。
 
-| タグ | 表示内容 |
-| --- | --- |
-| `livesplit-timer` | 現在タイムと小数部 |
-| `livesplit-game` | ゲーム名・カテゴリ |
-| `livesplit-splits` | 区間名・比較差・累積タイムの表 |
-| `livesplit-status` | 接続状態 |
-| `livesplit-value field="…"` | 任意の単独項目 |
+必要なのはLiveSplit.Bridgeです。LiveSplit内蔵WebSocketや旧Protobuf v3には対応していません。旧版からの変更点は[対応範囲と移行](compatibility.md)を参照してください。
 
-部品は削除・並べ替え・複製できます。パーツ同士は入れ子にせず、並べて配置してください。同じ接続先のパーツは通信を共有します。
+## 3. ブラウザーで表示を確認する
 
-[コンポーネント一覧](components/README.md) / [CSS設定](css/README.md) / [目次](README.md)
+展開先の `dist/index.html` を直接開きます。接続状態が「接続済み」になり、LiveSplitで計測を始めるとタイマーが進むことを確認してください。HTTP経由での表示も利用できます。
+
+表示・接続に問題がある場合は[トラブルシューティング](troubleshooting.md)を参照してください。
+
+## 4. OBSに表示する
+
+1. OBSでブラウザソースを追加します。
+2. 「ローカルファイル」を有効にし、展開先の `dist/index.html` を指定します。
+3. ソースの幅・高さをレイアウトに合わせます。
+
+タイマーだけを透過背景で表示する場合は `dist/timer.html` を選びます。
+
+## 5. 自分のレイアウトを作る
+
+`index.html` または `timer.html` を選び、`livesplit.js`・`livesplit.css` と一緒に別フォルダーへコピーします。HTMLを編集して保存し、ブラウザーやOBSでそのHTMLを読み込み直します。編集後の再ビルドは不要です。
+
+開発時の `dist/` は次のビルドで置き換わるため、自分のレイアウトは別フォルダーに保存してください。基本のHTML、部品の追加、属性・CSSの変更は[カスタマイズ](customization.md)で説明します。
+
+[カスタマイズへ](customization.md) / [目次](README.md)
