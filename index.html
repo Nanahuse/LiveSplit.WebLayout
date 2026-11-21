@@ -10,11 +10,6 @@
     main { max-width: 760px; margin: auto; display: grid; gap: 24px; }
     header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
     livesplit-timer { text-align: center; --ls-timer-size: clamp(40px, 10vw, 100px); }
-    .split-display { min-height: clamp(52px, 12vw, 124px); display: grid; align-items: center; }
-    .split-result { text-align: center; font-variant-numeric: tabular-nums; }
-    .split-result strong { display: block; font: 600 clamp(30px, 7vw, 72px) Consolas, monospace; }
-    .split-result output[data-sign="ahead"] { color: #67e8b0; }
-    .split-result output[data-sign="behind"] { color: #efad9d; }
     .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 24px; }
     .note { font-size: 12px; opacity: .6; }
   </style>
@@ -22,14 +17,7 @@
 <body>
   <main>
     <header><livesplit-game></livesplit-game><livesplit-status></livesplit-status></header>
-    <div class="split-display">
-      <div id="normal-display"><livesplit-timer></livesplit-timer></div>
-      <div id="split-result" class="split-result" role="status" hidden>
-        <span id="split-name"></span>
-        <strong id="split-time"></strong>
-        <output id="split-delta"></output>
-      </div>
-    </div>
+    <livesplit-timer></livesplit-timer>
     <livesplit-detailed-timer settings='{"Comparison":"Personal Best","Comparison2":"Best Segments"}'></livesplit-detailed-timer>
     <livesplit-text left="Custom Variable: counter" right-variable="counter"></livesplit-text>
     <livesplit-splits settings='{"ShowColumnLabels":true,"Columns":[{"Name":"+/-","Type":"Delta","Comparison":"Current Comparison","TimingMethod":"Current Timing Method"},{"Name":"Best +/-","Type":"Segment Delta","Comparison":"Best Segments","TimingMethod":"Current Timing Method"},{"Name":"Best / Delta","Type":"Segment Delta or Segment Time","Comparison":"Best Segments","TimingMethod":"Current Timing Method"},{"Name":"Best Segment","Type":"Comparison Segment Time","Comparison":"Best Segments","TimingMethod":"Current Timing Method"},{"Name":"Time","Type":"Split Time","Comparison":"Current Comparison","TimingMethod":"Current Timing Method"}]}'></livesplit-splits>
@@ -64,45 +52,6 @@
       <livesplit-timing-method></livesplit-timing-method>
     </div>
   </main>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const { getSession, formatTime } = window.LiveSplit;
-      const session = getSession();
-      const normal = document.getElementById('normal-display');
-      const result = document.getElementById('split-result');
-      const name = document.getElementById('split-name');
-      const time = document.getElementById('split-time');
-      const comparisonDelta = document.getElementById('split-delta');
-      let timeout;
-
-      function showNormal() {
-        clearTimeout(timeout);
-        normal.hidden = false;
-        result.hidden = true;
-      }
-
-      session.subscribeState(state => {
-        if (state.status !== 'connected' || state.phase === 'not_running') showNormal();
-      });
-      session.on('undo', showNormal);
-      session.on('reset', showNormal);
-      session.on('split', ({ result: split }) => {
-        if (!split) return;
-        const { timingMethod, comparison } = session.getState().context;
-        const splitTime = split.splitTime[timingMethod];
-        if (splitTime === null) return;
-        const delta = split.deltas[comparison]?.[timingMethod] ?? null;
-        name.textContent = split.name;
-        time.textContent = formatTime(splitTime);
-        comparisonDelta.textContent = delta === null ? '' : `${comparison} ${formatTime(delta, true)}`;
-        comparisonDelta.dataset.sign = delta === null ? '' : delta < 0 ? 'ahead' : 'behind';
-        clearTimeout(timeout);
-        normal.hidden = true;
-        result.hidden = false;
-        timeout = setTimeout(showNormal, 2500);
-      });
-    });
-  </script>
 </body>
 </html>
 

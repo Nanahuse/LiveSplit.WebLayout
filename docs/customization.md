@@ -103,7 +103,7 @@ livesplit-delta {
 
 ## 6. Splitに合わせて表示を変える
 
-JavaScriptからSessionを購読すると、確定した区間名、タイム、比較との差分を使って独自のHTMLを更新できます。配布用の `index.html` では、Splitの結果を2.5秒表示した後にタイマーへ戻します。購読や表示の更新方法は[JavaScript API](javascript-api.md)を参照してください。
+JavaScriptからSessionを購読すると、確定した区間名、タイム、比較との差分を使って独自のHTMLを更新できます。配布用の `split-result.html` はSplitの結果を2.5秒表示した後にタイマーへ戻ります。購読や表示の更新方法は[JavaScript API](javascript-api.md#split結果の表示例)を参照してください。
 
 ## 7. 保存して使う
 

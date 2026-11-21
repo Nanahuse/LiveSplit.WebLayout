@@ -7,7 +7,7 @@ if ($version -cnotmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
     throw "Invalid release version: $version"
 }
 
-$files = @('dist/index.html', 'dist/livesplit.js', 'dist/livesplit.css', 'README.md', 'schemas/LICENSE')
+$files = @('dist/index.html', 'dist/split-result.html', 'dist/livesplit.js', 'dist/livesplit.css', 'README.md', 'schemas/LICENSE')
 $files += Get-ChildItem -LiteralPath (Join-Path $root 'docs') -Recurse -File |
     Sort-Object FullName |
     ForEach-Object { [IO.Path]::GetRelativePath($root, $_.FullName).Replace('\', '/') }

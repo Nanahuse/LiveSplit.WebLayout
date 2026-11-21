@@ -76,6 +76,10 @@
 
 同期済み状態を公開してから、受信した操作を受信順に通知します。初期接続・再接続時は現在の状態を復元します。過去の操作は発火しません。
 
-配布用`index.html`には、Splitの確定結果に切り替わり、2.5秒後に通常のタイマーに戻る例があります。Undo・Reset・切断時はすぐに通常表示へ戻ります。
+## Split結果の表示例
 
-[目次](README.md)
+配布用の `dist/split-result.html` に実装例があります。`split` の `result` から選択中の計測方法の確定タイムと比較差分を表示します。`result` が `null` の場合は通常表示に戻ります。比較タイムがない場合は区間名と確定タイムを表示します。
+
+`personal-best` と `best-segment` は、表示中のSplitと `sequence` が一致し、`timingMethods` に結果の計測方法が含まれるときに表示します。結果の表示中も `subscribeClock` でタイマーを更新します。2.5秒後にタイマーへ戻り、Undo・Reset・切断時は演出を中断します。
+
+[ソースを読む](https://github.com/Nanahuse/LiveSplit.WebLayout/blob/main/split-result.html) / [目次](README.md)

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LiveSplit · Split Result</title>
+  <script type="module" src="./src/entry.ts"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 8px;
+      background: transparent;
+      color: #f4f7fb;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .overlay {
+      --ahead: #74f3b4;
+      --behind: #ff8e99;
+      --muted: #b3c1ce;
+      --gap: clamp(6px, 2vh, 12px);
+      display: grid;
+      box-sizing: border-box;
+      width: min(100%, 640px);
+      min-height: min(250px, calc(100vh - 16px));
+      margin-inline: auto;
+      border: 1px solid #36434d;
+      border-radius: 16px;
+      background: #10171eef;
+      overflow: hidden;
+    }
+    .view {
+      --accent: var(--muted);
+      grid-area: 1 / 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
+      min-width: 0;
+      padding: clamp(12px, 3.5vh, 24px) clamp(14px, 5vw, 34px);
+      border-top: 3px solid var(--accent);
+      background: radial-gradient(ellipse at top left, var(--tint, transparent), transparent 68%);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 220ms ease, visibility 220ms;
+    }
+    .overlay[data-view="normal"] .normal,
+    .overlay[data-view="result"] .result {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0s;
+    }
+    .overlay[data-view="normal"][data-interrupted] .result { transition: none; }
+    .normal[data-status="running"], .result[data-pace="ahead"] {
+      --accent: var(--ahead);
+      --tint: #2ab87b2b;
+    }
+    .normal[data-status="paused"] { --accent: #ffd482; }
+    .result[data-pace="behind"] {
+      --accent: var(--behind);
+      --tint: #ec53632e;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--accent);
+      font-size: .8rem;
+      font-weight: 750;
+      letter-spacing: .13em;
+    }
+    .status::before {
+      content: "";
+      width: .55em;
+      height: .55em;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .segment {
+      margin: 4px 0 0;
+      font-size: clamp(.95rem, 3.6vw, 1.4rem);
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .result[data-compared] .segment::after {
+      content: " · SPLIT RESULT";
+      color: var(--muted);
+      font-size: .65em;
+    }
+    .number, .split-time, .live-delta {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .number {
+      align-self: center;
+      display: block;
+      font-size: clamp(1.75rem, min(13vw, 31vh), 5.75rem);
+      font-weight: 800;
+      letter-spacing: -.055em;
+      line-height: 1;
+    }
+    .result[data-compared] .number { color: var(--accent); }
+    .details {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px 12px;
+      min-height: 1.55rem;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .live-delta, .split-time { font-size: 1.15rem; letter-spacing: 0; }
+    .live-delta[data-pace="ahead"] { color: var(--ahead); }
+    .live-delta[data-pace="behind"] { color: var(--behind); }
+    .split-time { color: #f4f7fb; }
+    .record {
+      padding: 2px 8px;
+      border: 1px solid #b19353;
+      border-radius: 4px;
+      color: #ffe1a0;
+    }
+    .record:not([hidden]) { animation: record-in 260ms ease-out; }
+    .result.is-entering > * { animation: result-in 360ms cubic-bezier(.16, 1, .3, 1); }
+    .result.is-entering[data-compared] .number { animation: delta-in 480ms cubic-bezier(.22, 1, .36, 1); }
+    @keyframes result-in {
+      from { opacity: 0; transform: translateY(8px) scale(.98); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes delta-in {
+      0% { opacity: 0; transform: translateY(8px) scale(.92); }
+      48% { opacity: 1; transform: scale(1.045); }
+      100% { transform: none; }
+    }
+    @keyframes record-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .overlay *, .overlay[data-view] .view { animation: none !important; transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="overlay" data-view="normal">
+    <section class="view normal" id="normal">
+      <header>
+        <span class="status" id="run-status">CONNECTING</span>
+        <h1 class="segment" id="current-segment" hidden></h1>
+      </header>
+      <span class="number" id="timer">—</span>
+      <div class="details">
+        <span id="live-comparison" hidden></span>
+        <span class="live-delta" id="live-delta" hidden></span>
+      </div>
+    </section>
+    <section class="view result" id="result" aria-hidden="true" aria-live="polite" aria-atomic="true">
+      <header>
+        <span class="status" id="result-status"></span>
+        <h2 class="segment" id="result-segment"></h2>
+      </header>
+      <strong class="number" id="result-value"></strong>
+      <div class="details">
+        <span class="split-time" id="result-time" hidden></span>
+        <span id="result-comparison" hidden></span>
+        <span class="record" id="personal-best" hidden>Personal Best</span>
+        <span class="record" id="best-segment" hidden>Best Segment</span>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { getSession, formatTime } = window.LiveSplit;
+      const session = getSession();
+      const byId = id => document.getElementById(id);
+      const normal = byId('normal');
+      const result = byId('result');
+      const overlay = normal.parentElement;
+      const runStatus = byId('run-status');
+      const currentSegment = byId('current-segment');
+      const timer = byId('timer');
+      const liveComparison = byId('live-comparison');
+      const liveDelta = byId('live-delta');
+      const resultStatus = byId('result-status');
+      const resultSegment = byId('result-segment');
+      const resultValue = byId('result-value');
+      const resultTime = byId('result-time');
+      const resultComparison = byId('result-comparison');
+      const personalBest = byId('personal-best');
+      const bestSegment = byId('best-segment');
+      const labels = {
+        connecting: 'CONNECTING', disconnected: 'DISCONNECTED', not_running: 'READY',
+        running: 'RUNNING', paused: 'PAUSED', ended: 'FINISHED',
+      };
+      const pace = delta => delta < 0 ? 'ahead' : delta > 0 ? 'behind' : 'even';
+      const formatDelta = delta => formatTime(delta, delta !== 0)
+        .replace(/^([+-]?)0:0?/, '$1').replace(/^-/, '−');
+      let activeResult;
+      let returnTimer;
+
+      function showNormal(interrupted = true) {
+        clearTimeout(returnTimer);
+        activeResult = undefined;
+        overlay.toggleAttribute('data-interrupted', interrupted);
+        overlay.dataset.view = 'normal';
+        normal.removeAttribute('aria-hidden');
+        result.setAttribute('aria-hidden', 'true');
+      }
+
+      function updateNormal(state, clock) {
+        const connected = state.status === 'connected';
+        const status = connected ? clock.phase ?? 'not_running' : state.status;
+        if (normal.dataset.status !== status) {
+          normal.dataset.status = status;
+          runStatus.textContent = labels[status];
+        }
+        const index = clock.phase === 'ended' ? clock.splitIndex - 1 : Math.max(0, clock.splitIndex);
+        const name = connected ? state.run?.segments.find(segment => segment.index === index)?.name ?? '' : '';
+        if (currentSegment.textContent !== name) currentSegment.textContent = name;
+        currentSegment.hidden = !name;
+        const time = formatTime(connected ? clock[clock.timingMethod] : null);
+        if (timer.textContent !== time) timer.textContent = time;
+        const comparison = state.context?.comparison ?? '';
+        if (liveComparison.textContent !== comparison) liveComparison.textContent = comparison;
+        liveComparison.hidden = !comparison;
+        const delta = state.delta[clock.timingMethod];
+        const deltaText = delta === null ? '' : formatDelta(delta);
+        if (liveDelta.textContent !== deltaText) {
+          liveDelta.textContent = deltaText;
+          liveDelta.dataset.pace = pace(delta);
+        }
+        liveDelta.hidden = delta === null;
+      }
+
+      session.subscribeState(state => {
+        if (state.status !== 'connected' || state.phase === 'not_running') showNormal();
+        updateNormal(state, session.getClock());
+      });
+      session.subscribeClock(clock => updateNormal(session.getState(), clock));
+      session.on('undo', () => showNormal());
+      session.on('reset', () => showNormal());
+
+      session.on('split', ({ sequence, result: split }) => {
+        const { status, context } = session.getState();
+        const splitTime = context && split?.splitTime[context.timingMethod];
+        if (status !== 'connected' || splitTime == null) {
+          showNormal();
+          return;
+        }
+        const { timingMethod, comparison } = context;
+        const delta = split.deltas[comparison]?.[timingMethod] ?? null;
+        const compared = delta !== null;
+        const time = formatTime(splitTime);
+
+        clearTimeout(returnTimer);
+        activeResult = { sequence, timingMethod };
+        personalBest.hidden = bestSegment.hidden = true;
+        result.toggleAttribute('data-compared', compared);
+        result.dataset.pace = compared ? pace(delta) : 'neutral';
+        resultStatus.textContent = compared ? pace(delta).toUpperCase() : 'SPLIT RESULT';
+        resultSegment.textContent = split.name;
+        resultValue.textContent = compared ? formatDelta(delta) : time;
+        resultTime.textContent = time;
+        resultComparison.textContent = compared ? comparison : '';
+        resultTime.hidden = resultComparison.hidden = !compared;
+
+        result.classList.remove('is-entering');
+        // Commit the removal so consecutive splits restart the CSS animation.
+        void result.offsetWidth;
+        result.classList.add('is-entering');
+        overlay.removeAttribute('data-interrupted');
+        overlay.dataset.view = 'result';
+        normal.setAttribute('aria-hidden', 'true');
+        result.removeAttribute('aria-hidden');
+        returnTimer = setTimeout(() => showNormal(false), 2500);
+      });
+
+      function showRecord({ sequence, timingMethods }, label) {
+        if (activeResult?.sequence === sequence && timingMethods.includes(activeResult.timingMethod)) {
+          label.hidden = false;
+        }
+      }
+
+      session.on('personal-best', event => showRecord(event, personalBest));
+      session.on('best-segment', event => showRecord(event, bestSegment));
+    });
+  </script>
+</body>
+</html>
