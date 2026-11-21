@@ -17,7 +17,14 @@ LiveSplitのタイマーや区間表をHTMLとCSSで配置・装飾できる表�
 2. LiveSplitに、ローカルファイルからの接続に対応したJSON Protocol v4のLiveSplit.Bridgeを追加して起動します。
 3. 展開したフォルダーの `dist/index.html` をブラウザーで開きます。OBSではブラウザソースの「ローカルファイル」に指定します。
 
-サンプルはSplitの結果を2.5秒表示した後、タイマーへ戻ります。利用時のNode.js・pnpm・HTTPサーバーは不要です。接続先や配布ファイルの説明は[導入ガイド](docs/getting-started.md)を参照してください。
+利用時のNode.js・pnpm・HTTPサーバーは不要です。接続先や配布ファイルの説明は[導入ガイド](docs/getting-started.md)を参照してください。
+
+## サンプル
+
+- `dist/index.html` はタイマー、区間表、各種メトリクスをまとめて表示します。[コンポーネント一覧](docs/components/README.md)
+- `dist/split-result.html` は区間名、確定タイム、取得できた比較差分を表示し、2.5秒後にタイマーへ戻ります。[OBSでの設定](docs/getting-started.md#4-obsに表示する) / [JavaScriptの実装例](docs/javascript-api.md#split結果の表示例)
+- `dist/split-ribbon.html` は全体の進捗と現在区間の前後を表示します。Splitすると横並びのカードが移動します。[OBSでの設定](docs/getting-started.md#4-obsに表示する) / [JavaScriptの実装例](docs/javascript-api.md#横型スプリットリボンの表示例)
+- `dist/route-map.html` は区間を地図上に並べ、Splitに合わせてマーカーを経路に沿って動かします。複数のエリアがあるRunでは全体と現在エリアを切り替えられます。[OBSでの設定](docs/getting-started.md#4-obsに表示する) / [経路とエリアの設定](docs/javascript-api.md#ルートマップの表示例)
 
 ## 自分のレイアウトを作る
 

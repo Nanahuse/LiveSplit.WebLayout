@@ -11,7 +11,7 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-`dist/` に `index.html`（標準パーツとSplit演出の例）、`livesplit.js`（通常のスクリプト）、`livesplit.css` を出力します。HTMLとJS・CSSを一緒に配置すればローカルファイルで表示できます。ビルドで `dist/` は置き換わるため、利用者のレイアウトは別フォルダーに保存します。
+`dist/` に `index.html`（標準パーツの配置例）、`split-result.html`（Split結果の演出例）、`livesplit.js`（通常のスクリプト）、`livesplit.css` を出力します。HTMLとJS・CSSを一緒に配置すればローカルファイルで表示できます。ビルドで `dist/` は置き換わるため、利用者のレイアウトは別フォルダーに保存します。
 
 ## 開発・検証コマンド
 

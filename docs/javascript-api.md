@@ -76,6 +76,28 @@
 
 同期済み状態を公開してから、受信した操作を受信順に通知します。初期接続・再接続時は現在の状態を復元します。過去の操作は発火しません。
 
-配布用`index.html`には、Splitの確定結果に切り替わり、2.5秒後に通常のタイマーに戻る例があります。Undo・Reset・切断時はすぐに通常表示へ戻ります。
+## Split結果の表示例
 
-[目次](README.md)
+配布用の `dist/split-result.html` に実装例があります。`split` の `result` から選択中の計測方法の確定タイムと比較差分を表示します。`result` が `null` の場合は通常表示に戻ります。比較タイムがない場合は区間名と確定タイムを表示します。
+
+`personal-best` と `best-segment` は、表示中のSplitと `sequence` が一致し、`timingMethods` に結果の計測方法が含まれるときに表示します。結果の表示中も `subscribeClock` でタイマーを更新します。2.5秒後にタイマーへ戻り、Undo・Reset・切断時は演出を中断します。
+
+[ソースを読む](https://github.com/Nanahuse/LiveSplit.WebLayout/blob/main/split-result.html)
+
+## 横型スプリットリボンの表示例
+
+`dist/split-ribbon.html` は `subscribeState` で全体の進捗と、現在区間およびその前後2件ずつのカードを更新します。スキップした区間も進捗に含めます。完了区間の差分は選択中の計測方法に従い、`attempt.segments` の累積タイムから `run.segments` の比較タイムを引いて求めます。実測タイムや比較タイムがない区間はグレーで表示します。ヘッダーには `state.delta` の値を使い、`subscribeClock` では時計の文字だけを更新します。
+
+同期済み状態と直後の操作イベントをまとめて反映します。`split` と `skip` ではカードを左へ動かし、`undo` では右へ戻します。`reset` では最初の区間に戻り、再接続時は復元された位置を即時に表示します。`best-segment` を受け取ると、選択中の計測方法に該当する区間のカードを短く強調します。
+
+[ソースを読む](https://github.com/Nanahuse/LiveSplit.WebLayout/blob/main/split-ribbon.html)
+
+## ルートマップの表示例
+
+`dist/route-map.html` は `state.splitIndex` から現在地を決め、`state.attempt.segments` の確定タイムがある地点を結んで通過経路を復元します。`split` と `skip` でマーカーが移動し、`undo` で前の地点へ戻ります。Resetでは開始地点、再接続時は復元した位置を即時に表示します。比較差分を取得できたSplitでは、完了地点に差分を短時間表示します。
+
+初期配置では12区間ごとにエリアが切り替わります。独自の地図を作るには `route.nodes` に `{ split: 0, name: '入口', area: 0, x: 70, y: 246 }` のように地点を指定します。`split` と `area` は0始まりで、`x` と `y` はそのエリアの左上を原点にした座標です。`route.areaNames` でエリア名を指定できます。
+
+隣り合う区間の既定の経路は直線です。分岐や曲線を追加するには `route.paths` に `{ from, to, d }` を指定します。`from` と `to` は区間番号で、完走地点は `"finish"` です。`d` を指定する場合は、全体マップの座標でSVGパスを書き、始点と終点を各地点の座標に合わせます。スキップを挟んだ地点間に経路が定義されていれば、通過経路として着色します。
+
+[ソースを読む](https://github.com/Nanahuse/LiveSplit.WebLayout/blob/main/route-map.html) / [目次](README.md)
