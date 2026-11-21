@@ -58,7 +58,7 @@ Splitsの詳細: [列の種類・比較対象](splits/columns.md) / [表示行�
 ## 共通リファレンス
 
 - [共通属性・ラベル・配置](common.md)
-- [独自HTMLテンプレート](custom-markup.md)
+- [JavaScript API](../javascript-api.md)
 - [CSS設定](../css/README.md)・[記録色と状態色](../css/record-colors.md)
 - [公式との機能差・制限](../compatibility.md)
 

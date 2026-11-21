@@ -56,7 +56,7 @@ Best Possible Time、Delta、区間時計、ペース、Sum of Best、回数、�
 | [Game](../components/info/game.md) | `--ls-game-size` / `--ls-game-weight` / `--ls-game-color`、`--ls-category-size` / `--ls-category-color` / `--ls-category-opacity`。個別非表示は `.ls-game` / `.ls-category` に `display:none` |
 | [Text](../components/info/text.md) | 左右の色・フォント変数と `--ls-content-gap`。2行表示は `settings.Display2Rows` |
 | [Hotkey Indicator](../components/info/hotkey-indicator.md) | `--ls-hotkey-height` / `--ls-hotkey-width` / `--ls-hotkey-on` / `--ls-hotkey-off` / `--ls-hotkey-unknown`。`show-text` で状態文字も表示 |
-| [Status](../components/info/status.md) / [Value](../components/info/value.md) | 共通変数と通常のCSS。汎用Valueは内側の `[data-ls-value]` で文字サイズなどを指定 |
+| [Status](../components/info/status.md) / [Value](../components/info/value.md) | 共通変数と通常のCSS。汎用Valueは内側の `.ls-unlabeled-value` で文字サイズなどを指定 |
 
 Detailed TimerとHotkey Indicatorの見た目は **公開CSS変数 → settings → 既定値** の順で優先します。再接続や属性変更で利用者のCSS変数を上書きしません。`--ls-setting-*` は内部用です。
 

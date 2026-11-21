@@ -101,17 +101,9 @@ livesplit-delta {
 
 区間表の列を変更する場合は[Splitsの列設定](components/splits/columns.md)へ進んでください。
 
-## 6. 独自のHTML構造にする
+## 6. Splitに合わせて表示を変える
 
-タグ内に子要素を置くと、既定のHTMLの代わりにその構造を使います。例えばTimerを次に置き換えます。
-
-```html
-<livesplit-timer>
-  <strong data-ls-field="whole"></strong><small data-ls-field="fraction"></small>
-</livesplit-timer>
-```
-
-`data-ls-field` の要素のテキストが更新されます。装飾要素は更新対象の外側に置き、配置は自分のCSSで指定します。部品ごとに必要な更新対象が異なるので、構造を大きく変える場合は[独自HTMLテンプレート](components/custom-markup.md)と各部品のページを参照してください。
+JavaScriptからSessionを購読すると、確定した区間名、タイム、比較との差分を使って独自のHTMLを更新できます。配布用の `index.html` では、Splitの結果を2.5秒表示した後にタイマーへ戻します。購読や表示の更新方法は[JavaScript API](javascript-api.md)を参照してください。
 
 ## 7. 保存して使う
 

@@ -1,7 +1,7 @@
-import { BridgeEventType, TimerPhase } from './generated/protocol.ts';
+import { BridgeEventType } from './generated/protocol.ts';
 import type { TimerState, AttemptState, ContextState, CompletedCount, RunState } from './generated/protocol.ts';
 import { readReply, readResult, readEvent } from './bridge-protocol.ts';
-import type { Query, RpcReply } from './bridge-protocol.ts';
+import type { BridgeEvent, Query, RpcReply } from './bridge-protocol.ts';
 import type { ConnectionStatus } from './timer.ts';
 
 export interface BridgeSnapshot {
@@ -21,10 +21,24 @@ interface Options {
   createSocket?: (url: string) => BridgeSocket;
   now?: () => number;
   onSnapshot: (snapshot: BridgeSnapshot) => void;
+  onEvent?: (event: BridgeEvent) => void;
   onStatus: (status: ConnectionStatus, message?: string) => void;
   pollMs?: number; timeoutMs?: number; retryMs?: number;
 }
 const queries: Query[] = ['get_timer_state', 'get_attempt', 'get_run', 'get_context_state', 'get_completed_count'];
+
+// Preserve snapshot identities when a poll returns the same data. Compare the
+// decoded values directly because Bridge times contain bigint values.
+function equal(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const left = Object.entries(a), right = b as Record<string, unknown>;
+  return left.length === Object.keys(right).length && left.every(([key, value]) => Object.hasOwn(right, key) && equal(value, right[key]));
+}
+function reuse<T>(previous: T | undefined, next: T): T {
+  return previous !== undefined && equal(previous, next) ? previous : next;
+}
 
 /** Read-only v4 transport. Neither timer_operation nor game_time_operation is exposed. */
 export class BridgeClient {
@@ -69,6 +83,7 @@ export class BridgeClient {
     if (this.stopped) return;
     const gen = this.generation;
     this.options.onStatus('connecting');
+    if (this.stopped || gen !== this.generation) return;
     try {
       this.opening = setTimeout(() => this.fail(new Error('Bridge connection timed out')), this.options.timeoutMs ?? 3000);
       const events = this.events = this.socket(this.endpoint.replace(/\/rpc$/, '/events'));
@@ -79,8 +94,11 @@ export class BridgeClient {
         try {
           const message = readEvent(event.data);
           this.checkSession(message.sessionId);
+          if (message.eventSequence === this.sequence) return;
           if (this.sequence !== undefined && message.eventSequence !== (this.sequence === 0xffffffff ? 1 : this.sequence + 1)) throw new Error('Bridge event sequence gap: resynchronizing');
           this.sequence = message.eventSequence; this.epoch++;
+          if (this.snapshot) this.options.onEvent?.(message);
+          if (gen !== this.generation) return;
           if (message.type === BridgeEventType.EVENT_RUN_CHANGED) this.invalidate(queries);
           else if (message.type === BridgeEventType.EVENT_CONTEXT_CHANGED) this.invalidate(['get_context_state', 'get_timer_state']);
           else {
@@ -89,7 +107,7 @@ export class BridgeClient {
               if (this.ready) this.options.onSnapshot(this.snapshot);
             }
             // Reset can change comparisons, best segments, and context even if run_changed is lost.
-            this.invalidate(message.type === BridgeEventType.EVENT_TIMER_RESET ? queries : ['get_timer_state', 'get_attempt', 'get_completed_count']);
+            this.invalidate(message.type === BridgeEventType.EVENT_TIMER_RESET ? queries : ['get_timer_state', 'get_attempt', 'get_completed_count', 'get_context_state']);
           }
         } catch (error) { this.fail(error); }
       };
@@ -158,10 +176,10 @@ export class BridgeClient {
         for (const { key, response, at } of result) {
           switch (key) {
             case 'get_timer_state': next.timer = response.result as TimerState; next.timerAt = at; break;
-            case 'get_run': next.run = response.result as RunState; break;
-            case 'get_attempt': next.attempt = response.result as AttemptState; next.attemptFresh = true; break;
-            case 'get_context_state': next.context = response.result as ContextState; break;
-            case 'get_completed_count': next.completed = response.result as CompletedCount; break;
+            case 'get_run': next.run = reuse(next.run, response.result as RunState); break;
+            case 'get_attempt': next.attempt = reuse(next.attempt, response.result as AttemptState); next.attemptFresh = true; break;
+            case 'get_context_state': next.context = reuse(next.context, response.result as ContextState); break;
+            case 'get_completed_count': next.completed = reuse(next.completed, response.result as CompletedCount); break;
           }
         }
         if (!next.timer || !next.run || !next.attempt || !next.context || !next.completed) throw new Error('Incomplete Bridge snapshot');
@@ -169,17 +187,12 @@ export class BridgeClient {
           // A timer resync can discover a change before its event arrives.
           next.attemptFresh = false; this.dirty.add('get_attempt'); this.dirty.add('get_completed_count');
         }
-        this.snapshot = next; this.options.onStatus('connected'); this.options.onSnapshot(next);
+        const connected = this.snapshot !== undefined;
+        this.snapshot = next;
+        if (!connected) this.options.onStatus('connected');
+        if (gen === this.generation) this.options.onSnapshot(next);
       }
     } catch (error) { if (gen === this.generation) this.fail(error); }
     finally { if (gen === this.generation) this.syncing = false; }
   }
-}
-
-export function clockTicks(snapshot: BridgeSnapshot, now: number, game = false): bigint | undefined {
-  const timer = snapshot.timer;
-  const value = game ? timer.isGameTimeInitialized ? timer.gameTimeTicks : undefined : timer.realTimeTicks;
-  if (value === undefined) return undefined;
-  const elapsed = Math.min(Math.max(0, now - snapshot.timerAt), 2000);
-  return value + (timer.phase === TimerPhase.RUNNING && (!game || !timer.isGameTimePaused) ? BigInt(Math.floor(elapsed * 10000)) : 0n);
 }

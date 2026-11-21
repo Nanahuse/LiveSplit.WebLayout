@@ -1,6 +1,7 @@
-// Dedicated tags share the same field bindings as livesplit-value.
+import type { ClockState, SessionState } from './bridge-state.ts';
+import { clockTime, displayTime, displayClock, readout, segmentMetrics, splitSummary } from './readout.ts';
+import { timerColor } from './record-colors.ts';
 export const metrics = {
-  'livesplit-hotkey-indicator': { field: 'hotkey-status', label: 'Global Hotkeys' },
   'livesplit-segment-timer': { field: 'segment-time', label: '区間タイマー' },
   'livesplit-previous-segment': { field: 'previous-segment-delta', label: 'Previous Segment' },
   'livesplit-previous-segment-time': { field: 'previous-segment-time', label: '直前の区間タイム' },
@@ -25,6 +26,61 @@ export const metrics = {
   'livesplit-timing-method': { field: 'method', label: '計測方法' },
 } satisfies Record<string, { field: string; label: string; labelField?: string }>;
 
-export function metricTemplate(metric: { field: string; label: string; labelField?: string }): string {
-  return `<span class="ls-label"${metric.labelField ? ` data-ls-field="${metric.labelField}"` : ''}>${metric.label}</span><span class="ls-value" data-ls-field="${metric.field}">—</span>`;
+export function fieldUsesClock(field: string) {
+  return ['time', 'whole', 'fraction', 'real-time', 'game-time', 'best-possible', 'segment-time', 'live-segment-delta'].includes(field);
+}
+
+export function connectionText({ status, message }: SessionState) {
+  if (message) return `再接続待ち: ${message}`;
+  return { connecting: '接続中', connected: '接続済み', disconnected: '再接続待ち' }[status];
+}
+
+export function fieldValue(field: string, state: SessionState, clock?: ClockState): { text: string; sign?: string; record?: string; color?: string } {
+  switch (field) {
+    case 'status': return { text: connectionText(state) };
+    case 'endpoint': return { text: state.endpoint };
+    case 'game': return { text: state.run?.gameName ?? 'ゲーム情報未取得' };
+    case 'category': return { text: state.run?.categoryName ?? 'カテゴリ情報未取得' };
+    case 'phase': return { text: state.phase ? { not_running: '待機中', running: '計測中', paused: '一時停止', ended: '完走' }[state.phase] : '—' };
+    case 'method': return { text: state.context ? state.context.timingMethod === 'gameTime' ? 'Game Time' : 'Real Time' : '—' };
+    case 'comparison': return { text: state.context?.comparison ?? '—' };
+    case 'attempts': return { text: state.attempt?.count.toString() ?? '—' };
+    case 'completed': return { text: state.completedCount?.toString() ?? '—' };
+    case 'hotkey-status': return { text: '取得不可' };
+    case 'real-time': return { text: displayTime(clock?.realTime) };
+    case 'game-time': return { text: displayTime(clock?.gameTime) };
+    case 'final-label': return { text: state.phase === 'ended' ? '完走タイム' : '比較の最終タイム' };
+  }
+  const run = readout(state);
+  const now = clockTime(run, clock);
+  switch (field) {
+    case 'time':
+    case 'whole':
+    case 'fraction': {
+      const time = displayClock(clock?.[clock.timingMethod] ?? null);
+      const color = timerColor(run, now);
+      return { text: field === 'time' ? time.whole + time.fraction : time[field], record: color === 'pb' ? 'pb' : '', color };
+    }
+    case 'current-split': return { text: splitSummary(run).current };
+    case 'previous-split': return { text: splitSummary(run).previous };
+    case 'split-progress': return { text: splitSummary(run).progress };
+    case 'last-split': return { text: displayTime(run.lastSplit) };
+    case 'split-target': return { text: displayTime(run.comparisons.rows.get(run.referenceIndex)?.get('')?.target) };
+    case 'delta': return deltaValue(run.delta);
+    case 'best-possible': return { text: displayTime(run.bestPossibleTime(now)) };
+    case 'final-time': return { text: displayTime(run.finalTime) };
+    case 'current-pace': return { text: displayTime(run.pace) };
+    case 'sum-of-best': return { text: displayTime(run.sumOfBest) };
+    case 'segment-time': {
+      const color = timerColor(run, now);
+      return { text: displayTime(segmentMetrics(run, now).segment), color, record: color === 'pb' ? 'pb' : '' };
+    }
+    case 'previous-segment-time': return { text: displayTime(segmentMetrics(run, null).previous), record: run.isBestSegment(run.index - 1) ? 'bs' : '' };
+    case 'live-segment-delta': return deltaValue(segmentMetrics(run, now).delta);
+    default: return { text: '—' };
+  }
+}
+
+function deltaValue(value: number | null) {
+  return { text: displayTime(value, true), sign: value === null ? '' : value < 0 ? 'ahead' : 'behind' };
 }

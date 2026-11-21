@@ -26,9 +26,9 @@
 | 表示行数・先読み・最終区間の固定・精度と既定値 | [表示設定](settings.md) |
 | 接続先 | [共通設定](../common.md) |
 
-## CSS・独自HTML
+## CSS
 
-幅・枠・列幅・余白は[Splitsの装飾](style.md)、記録更新の色は[記録色](../../css/record-colors.md)を参照してください。表のHTML構造を変える場合は[独自HTMLテンプレート](../custom-markup.md)を使用できます。
+幅・枠・列幅・余白は[Splitsの装飾](style.md)、記録更新の色は[記録色](../../css/record-colors.md)を参照してください。
 
 ## 動作・制限
 

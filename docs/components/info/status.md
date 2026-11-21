@@ -18,14 +18,14 @@
 
 この部品固有の属性・settingsはありません。`server` は[共通設定](../common.md)を参照してください。
 
-## CSS・独自HTML
+## CSS
 
 ```css
 livesplit-status[data-state="connected"] { --ls-color: #67e8b0; }
 livesplit-status[data-state="error"] { --ls-color: #efad9d; }
 ```
 
-ラベル付き部品ではないため、文字サイズは通常の`font-size`を使います。独自HTMLの更新先は`data-ls-field="status"`です。
+ラベル付き部品ではないため、文字サイズは通常の`font-size`を使います。
 
 ## 動作・制限
 

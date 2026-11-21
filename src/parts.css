@@ -22,7 +22,6 @@ livesplit-game .ls-category { font-size: var(--ls-category-size, 1em); color: va
 :is(livesplit-splits, livesplit-subsplits) th:first-child { text-align: left; font-weight: 500; overflow-wrap: anywhere; }
 :is(livesplit-splits, livesplit-subsplits) td { font-family: var(--ls-time-font, Consolas, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
 :is(livesplit-splits, livesplit-subsplits) .active { background: var(--ls-active-background, #234238); color: var(--ls-accent, #67e8b0); }
-:is(livesplit-splits, livesplit-subsplits) .split-number { opacity: .55; }
 :is(livesplit-splits, livesplit-subsplits) .splits-empty { white-space: normal; text-align: center; opacity: .7; }
 [data-ls-part] [data-sign="ahead"] { color: var(--ls-ahead, #67e8b0); }
 [data-ls-part] [data-sign="behind"] { color: var(--ls-behind, #efad9d); }

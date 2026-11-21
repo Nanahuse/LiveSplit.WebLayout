@@ -1,19 +1,18 @@
+import { displayClock } from '../src/readout.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTime, getEndpoint } from '../src/timer.ts';
+import { getEndpoint } from '../src/timer.ts';
 
-test('formats LiveSplit TimeSpan values without rounding ahead', () => {
+test('formats numeric seconds without rounding ahead', () => {
   for (const [input, whole, fraction] of [
-    ['00:00:00', '0:00', '.00'],
-    ['00:01:23.4567890', '1:23', '.45'],
-    ['01:02:03.9', '1:02:03', '.90'],
-    ['-00:00:05.1200000', '-0:05', '.12'],
-    ['2.03:04:05.0090000', '51:04:05', '.00'],
-    ['100:00:00', '100:00:00', '.00'],
-  ]) assert.deepEqual(formatTime(input), { whole, fraction });
-  for (const input of ['-', '', 'Running', '00:60:00', '{"data":0}', '00:00:00.12345678']) {
-    assert.equal(formatTime(input), null);
-  }
+    [0, '0:00', '.00'],
+    [83.456789, '1:23', '.45'],
+    [3723.9, '1:02:03', '.90'],
+    [-5.12, '-0:05', '.12'],
+    [183845.009, '51:04:05', '.00'],
+    [360000, '100:00:00', '.00'],
+    [null, '—', ''],
+  ] as const) assert.deepEqual(displayClock(input), { whole, fraction });
 });
 
 test('accepts only valid WebSocket endpoints', () => {

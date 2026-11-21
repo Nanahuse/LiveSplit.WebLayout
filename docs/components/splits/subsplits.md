@@ -43,7 +43,7 @@
 
 列設定・計測方式・表示行数・先読み・最終区間固定・幅・精度などはSplitsと共通です。細い区切り線の既定値は公式Subsplitsに合わせてfalseです。狭い表示行数では最終行を優先し、余裕がある場合に見出しを追加します。
 
-## CSS・独自HTML
+## CSS
 
 共通のSplits用CSS変数に加え、`--ls-subsplit-indent`、`--ls-header-background`、`--ls-header-color`、`--ls-header-weight`、`--ls-section-timer-color`、`--ls-section-gap`、`--ls-collapsed-background`を設定できます。`data-section-index` / `data-section-start` / `data-section-end` / `data-collapsed` / `data-section-header`で行別に装飾できます。
 
@@ -53,8 +53,6 @@
 | `--ls-header-background` / `--ls-header-color` / `--ls-header-weight` | #ffffff12 / inherit / 600 |
 | `--ls-section-timer-color` / `--ls-section-gap` | inherit / 1em |
 | `--ls-collapsed-background` | transparent |
-
-独自の表構造を使う場合は[独自HTMLテンプレート](../custom-markup.md)を参照してください。
 
 ## 動作・制限
 

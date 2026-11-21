@@ -1,6 +1,6 @@
 # 部品の共通設定
 
-すべての部品は独立して配置でき、同じ接続先のRPC・Events接続を共有します。最後の部品を取り除くと接続を閉じます。
+すべての部品は独立して配置でき、同じ接続先のRPC・Events接続を共有します。JavaScriptの購読も同じ接続を使います。部品とJavaScriptの購読がすべてなくなると接続を閉じます。
 
 ## 共通属性
 
@@ -50,4 +50,4 @@ Possible Time Save・Previous Segmentで比較名を明示した場合は、既�
 
 settingsのキーは大文字・小文字を区別します。数値・真偽値はJSONの数値・真偽値で渡してください。未対応の設定や不正な型を指定すると、設定エラーになる部品があります。[カスタマイズ](../customization.md)にJSONの記述例があります。
 
-[共通CSS](../css/common.md) / [独自HTML](custom-markup.md) / [部品一覧](README.md)
+[共通CSS](../css/common.md) / [JavaScript API](../javascript-api.md) / [部品一覧](README.md)

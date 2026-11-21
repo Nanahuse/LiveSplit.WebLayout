@@ -34,7 +34,7 @@
 
 明示したvariable属性はsettingsの変数名に優先します。値の選択順はvariable → field → 固定テキストです。片側だけなら中央寄せになります。
 
-## CSS・独自HTML
+## CSS
 
 | 変数・対象 | 用途 |
 |---|---|
@@ -42,8 +42,6 @@
 | `--ls-text-left-font` / `--ls-text-right-font` | 左右のfont指定。既定inherit。例: bold 20px sans-serif |
 | `--ls-content-gap` | 左右／2行の間隔。既定1em |
 | `.ls-text` / `[data-text-side="left"]` / `[data-text-side="right"]` | 全体と左右の更新対象 |
-
-独自HTMLでは`data-text-side="left"` / `"right"`を残すと属性の設定が反映されます。
 
 ## 動作・制限
 

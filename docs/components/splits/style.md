@@ -38,6 +38,6 @@
 
 狭い固定幅では数値が省略されるため、必要に応じて列幅または表の最小幅を広げてください。2行表示では区間名は1行目全幅、数値列のWidthは2行目に適用します。`ShowThinSeparators: false`は罫線の幅指定より優先されます。
 
-`--ls-blank-height`は空行の高さ（既定2.6em）。現在行は`.active`、最終行は`.last-split`、空行は`.split-blank`、区間番号は`.split-number`です。差分セルの`data-sign="ahead|behind"`は`--ls-ahead` / `--ls-behind`で装飾できます。
+`--ls-blank-height`は空行の高さ（既定2.6em）。現在行は`.active`、最終行は`.last-split`、空行は`.split-blank`です。差分セルの`data-sign="ahead|behind"`は`--ls-ahead` / `--ls-behind`で装飾できます。
 
 [記録色](../../css/record-colors.md) / [Splits目次](README.md)

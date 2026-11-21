@@ -19,7 +19,7 @@
 
 `pb-effect` / `bs-effect` と `server` などは[共通設定](../common.md)を参照してください。Timerに `label` やDetailed Timer用の `settings` は適用されません。
 
-## CSS・独自HTML
+## CSS
 
 | 変数・対象 | 用途 |
 |---|---|
@@ -28,8 +28,6 @@
 | `--ls-time-font` | 時計フォント。既定Consolas, monospace |
 | `--ls-accent` / `--ls-muted` | 基本色／切断中の色。状態色・記録色が優先 |
 | `.ls-timer` / `.ls-fraction` | 既定テンプレートの時計／小数 |
-
-独自HTMLは[テンプレート](../custom-markup.md)を参照してください。
 
 ## 動作・制限
 

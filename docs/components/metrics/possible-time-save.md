@@ -33,11 +33,9 @@
 
 TotalTimeSaveは待機中に全区間、走行中に残り区間を合計します。現在区間の経過に応じて減少し、完走後は0です。公式同様、合計では算出不能な区間を除外します。精度はSeconds / Tenths / Hundredths / Milliseconds。
 
-## CSS・独自HTML
+## CSS
 
 ラベルは`.ls-label`、値は`.ls-value`です。`--ls-label-size` / `--ls-label-color` / `--ls-label-font`、`--ls-value-size` / `--ls-value-color` / `--ls-value-font`、`--ls-label-gap`を利用できます。枠・背景・余白は[共通CSS](../../css/common.md)を参照してください。
-
-独自テンプレートでは値を表示する要素に`data-ls-field="possible-time-save"`を指定します。この専用タグの内側で使用してください。専用settingsと計算は汎用Valueでは実行されません。
 
 ## 動作・制限
 

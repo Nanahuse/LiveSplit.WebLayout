@@ -12,8 +12,7 @@ export function nativeSettings(root: Element): Record<string, unknown> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('settings must be an object');
   return raw as Record<string, unknown>;
 }
-export function splitSettings(root: Element): SplitSettings {
-  const raw = nativeSettings(root);
+export function splitSettings(root: Element, raw = nativeSettings(root)): SplitSettings {
   const settings = { ...splitDefaults };
   const sub = root.localName === 'livesplit-subsplits';
   if (sub) settings.ShowThinSeparators = false;
@@ -24,10 +23,6 @@ export function splitSettings(root: Element): SplitSettings {
     if (typeof raw[key] !== typeof settings[key]) throw new Error(`Invalid ${key}`);
     Object.assign(settings, { [key]: raw[key] });
   }
-  const total = root.getAttribute('total-splits'), upcoming = root.getAttribute('upcoming-splits');
-  if (total !== null) settings.VisualSplitCount = Number(total);
-  if (upcoming !== null) settings.SplitPreviewCount = Number(upcoming);
-  if (root.hasAttribute('always-show-last-split')) settings.AlwaysShowLastSplit = root.getAttribute('always-show-last-split') !== 'false';
   if (!Number.isInteger(settings.VisualSplitCount) || settings.VisualSplitCount < 1 || settings.VisualSplitCount > 1000) throw new Error('Invalid VisualSplitCount');
   if (!Number.isInteger(settings.SplitPreviewCount) || settings.SplitPreviewCount < 0) throw new Error('Invalid SplitPreviewCount');
   settings.SplitPreviewCount = Math.min(settings.SplitPreviewCount, Math.max(0, settings.VisualSplitCount - (settings.AlwaysShowLastSplit ? 2 : 1)));
@@ -36,8 +31,8 @@ export function splitSettings(root: Element): SplitSettings {
   }
   return settings;
 }
-export function subsplitSettings(root: Element) {
-  const raw = nativeSettings(root), settings = { ...splitSettings(root), ...subsplitDefaults };
+export function subsplitSettings(root: Element, raw = nativeSettings(root)) {
+  const settings = { ...splitSettings(root, raw), ...subsplitDefaults };
   for (const key of Object.keys(subsplitDefaults) as (keyof typeof subsplitDefaults)[]) {
     if (!(key in raw)) continue;
     if (typeof raw[key] !== typeof settings[key]) throw new Error(`Invalid ${key}`);

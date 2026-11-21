@@ -1,6 +1,7 @@
+import { readSnapshot } from './readout-fixture.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BridgeClient, clockTicks } from '../src/bridge-client.ts';
+import { BridgeClient } from '../src/bridge-client.ts';
 import type { BridgeSnapshot } from '../src/bridge-client.ts';
 import { TimerPhase, BridgeEventType } from '../src/generated/protocol.ts';
 import { fixture, FakeBridgeSocket, flush, session, ticks, stringify } from './bridge-fixture.ts';
@@ -80,13 +81,13 @@ test('loss of either socket and unresponsive RPC invalidate state', async t => {
 
 test('clock interpolates real/game time independently, preserves unset and bounds stale time', () => {
   const s = fixture();
-  assert.equal(clockTicks(s, 500), ticks(83.95));
-  assert.equal(clockTicks(s, 500, true), ticks(80.75));
-  s.timer.isGameTimePaused = true; assert.equal(clockTicks(s, 500, true), ticks(80.25));
-  s.timer.phase = TimerPhase.PAUSED; assert.equal(clockTicks(s, 500), ticks(83.45));
-  s.timer.phase = TimerPhase.ENDED; assert.equal(clockTicks(s, 500), ticks(83.45));
-  s.timer.isGameTimeInitialized = false; assert.equal(clockTicks(s, 500, true), undefined);
-  s.timer.phase = TimerPhase.RUNNING; assert.equal(clockTicks(s, 9000), ticks(85.45));
+  assert.equal(readSnapshot(s, 500).clock.realTime, 83.95);
+  assert.equal(readSnapshot(s, 500).clock.gameTime, 80.75);
+  s.timer.isGameTimePaused = true; assert.equal(readSnapshot(s, 500).clock.gameTime, 80.25);
+  s.timer.phase = TimerPhase.PAUSED; assert.equal(readSnapshot(s, 500).clock.realTime, 83.45);
+  s.timer.phase = TimerPhase.ENDED; assert.equal(readSnapshot(s, 500).clock.realTime, 83.45);
+  s.timer.isGameTimeInitialized = false; assert.equal(readSnapshot(s, 500).clock.gameTime, null);
+  s.timer.phase = TimerPhase.RUNNING; assert.equal(readSnapshot(s, 9000).clock.realTime, 85.45);
 });
 
 test('v4 wraps sequence and request IDs, and reset with null state refreshes all queries', async t => {

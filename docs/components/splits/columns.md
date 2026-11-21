@@ -85,8 +85,6 @@ Bridgeから全区間の比較値と現在Attemptを取得するため、未到�
 
 ## 関連設定
 
-表示範囲は現在区間に合わせて移動し、既定は8行・先読み1行・最終区間固定です。`total-splits` / `upcoming-splits` / `always-show-last-split` などは[表示設定](settings.md)、色・フォント・列幅は[装飾](style.md)を参照してください。
-
-旧 `columns` 属性・小文字キー・`comparisons` の扱いは[対応範囲と移行](../../compatibility.md)に、公式実装との照合元は[開発・検証](../../development.md)にまとめています。
+表示範囲は現在区間に合わせて移動し、既定は8行・先読み1行・最終区間固定です。表示行数などは[表示設定](settings.md)、色・フォント・列幅は[装飾](style.md)を参照してください。
 
 [表示設定](settings.md) / [装飾](style.md) / [Splits目次](README.md)

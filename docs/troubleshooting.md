@@ -7,7 +7,6 @@
 1. HTMLと同じフォルダーに `livesplit.js` を置き、`<script defer src="./livesplit.js"></script>` のパスを確認します。
 2. 装飾がない場合は `livesplit.css` の配置と `<link rel="stylesheet" href="./livesplit.css">` を確認します。CSSを省略すると付属の配置・装飾は適用されません。
 3. タグの綴りを[コンポーネント一覧](components/README.md)と照合し、部品同士の入れ子を解消します。
-4. タグ内に子要素を置いた場合は既定テンプレートが生成されません。まず子要素なしで試すか、[独自HTMLの更新対象](components/custom-markup.md)を確認します。
 
 開発用のルート `index.html` を直接開いている場合は、配布ZIP内の `dist/index.html` を使ってください。ソースからの利用は[開発・検証](development.md)を参照してください。
 
@@ -65,6 +64,6 @@
 
 ## OBSで切れる・背景が透過しない
 
-ブラウザソースの幅・高さを内容に合わせます。全体の幅を設定しても高さは内容に応じて変わるため、ソース内に収まるか確認してください。透過タイマーは `timer.html` を使えます。独自HTMLでは `body { margin: 0; background: transparent; }` を指定し、部品の背景も確認します。付属CSSはbodyの背景・余白を指定しません。
+ブラウザソースの幅・高さを内容に合わせます。全体の幅を設定しても高さは内容に応じて変わるため、ソース内に収まるか確認してください。背景を透過するには `body { margin: 0; background: transparent; }` を指定し、部品の背景も確認します。付属CSSはbodyの背景・余白を指定しません。
 
-[導入ガイド](getting-started.md) / [接続設定](connection.md) / [対応範囲と移行](compatibility.md) / [目次](README.md)
+[導入ガイド](getting-started.md) / [接続設定](connection.md) / [対応範囲](compatibility.md) / [目次](README.md)
