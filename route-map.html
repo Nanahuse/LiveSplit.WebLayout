@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LiveSplit · Route Map</title>
+  <script type="module" src="./src/entry.ts"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 8px;
+      background: transparent;
+      color: #edf7f2;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .layout {
+      --accent: #8ff0b8;
+      --behind: #ff9eac;
+      --muted: #a6bdb6;
+      box-sizing: border-box;
+      max-width: 1020px;
+      margin-inline: auto;
+      padding: clamp(12px, 2.45vw, 24px);
+      border: 1px solid #35534f;
+      border-radius: 18px;
+      background: linear-gradient(128deg, #162f30, #102426f5 61%);
+    }
+    .header, .map-header, .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .heading, .place, .area, .comparison { min-width: 0; }
+    .game, .place, .area, .comparison {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .game, .phase, .area, .counter, .comparison, .modes button {
+      font-size: clamp(.65rem, 1.4vw, .78rem);
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .game { margin: 0; color: var(--accent); }
+    h1 { margin: 2px 0 0; font-size: clamp(1.05rem, 4.15vw, 2.3rem); line-height: 1.05; }
+    .timing { min-width: 0; text-align: right; }
+    .timer, .delta, .counter { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .timer {
+      display: block;
+      font-size: clamp(1.45rem, 7vw, 4.1rem);
+      font-weight: 800;
+      letter-spacing: -.05em;
+      line-height: 1;
+    }
+    .timing-meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 8px;
+      min-height: 1.25em;
+      max-width: clamp(100px, 38vw, 320px);
+      margin: 3px 0 0 auto;
+    }
+    .comparison, .phase { color: var(--muted); }
+    .comparison:empty, .delta:empty { display: none; }
+    [data-tone="ahead"] { --tone: var(--accent); }
+    [data-tone="behind"] { --tone: var(--behind); }
+    .delta { color: var(--tone, var(--muted)); font-weight: 750; }
+    .map-header { margin: 13px 0 6px; }
+    .area { color: var(--muted); }
+    .modes { display: flex; gap: 4px; }
+    .modes[hidden] { display: none; }
+    .modes button {
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .modes button[aria-pressed="true"] {
+      border-color: #496c62;
+      background: #26413b;
+      color: var(--accent);
+    }
+    .map {
+      display: block;
+      width: 100%;
+      height: clamp(210px, min(53vw, 64vh), 410px);
+      box-sizing: border-box;
+      border: 1px solid #31514d;
+      border-radius: 12px;
+      background: #0d1e22;
+    }
+    .region { fill: #142b2e; stroke: #2a4944; stroke-width: 1; }
+    .region-pattern { fill: url(#grid); }
+    .region-label { fill: #a6bdb6; font-size: 22px; font-weight: 750; letter-spacing: .06em; }
+    .edge { fill: none; stroke: #465d60; stroke-width: 3; stroke-linecap: round; transition: stroke 180ms ease; }
+    .edge.branch { stroke-dasharray: 5 8; }
+    .edge.is-passed { stroke: var(--accent); stroke-dasharray: none; }
+    .stop circle { fill: #192c32; stroke: #859d98; stroke-width: 2; }
+    .stop.is-complete circle { fill: #335744; stroke: var(--accent); }
+    .stop.is-current circle { stroke: var(--accent); }
+    .stop text {
+      fill: #d1ded7;
+      stroke: #142b2e;
+      stroke-width: 3.5;
+      paint-order: stroke;
+      font-size: 13px;
+      font-weight: 650;
+      text-anchor: middle;
+    }
+    .map[data-overview] .stop text, .map:not([data-overview]) .region-label { display: none; }
+    .marker-ring { fill: #23473b; stroke: var(--accent); stroke-width: 2.5; }
+    .marker-core { fill: var(--accent); }
+    .result { pointer-events: none; animation: result-in 1.4s ease both; }
+    .result rect { fill: #17352d; stroke: var(--tone, #859d98); stroke-width: 1; }
+    .result text {
+      fill: var(--tone, #edf7f2);
+      font-size: 14px;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+      text-anchor: middle;
+    }
+    @keyframes result-in {
+      0% { opacity: 0; }
+      12%, 78% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .footer { margin-top: 10px; }
+    .place { font-size: clamp(.8rem, 2.2vw, 1.05rem); font-weight: 700; }
+    .phase { margin-inline-start: 8px; }
+    .counter { color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) {
+      .edge { transition: none; }
+      .result { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <header class="header">
+      <div class="heading">
+        <p class="game" id="game">LiveSplit</p>
+        <h1>Route progress</h1>
+      </div>
+      <div class="timing">
+        <span class="timer" id="timer">—</span>
+        <div class="timing-meta">
+          <span class="delta" id="delta"></span>
+          <span class="comparison" id="comparison"></span>
+        </div>
+      </div>
+    </header>
+    <div class="map-header">
+      <span class="area" id="area">Waiting for a run</span>
+      <div class="modes" id="modes" role="group" aria-label="Map view" hidden>
+        <button type="button" id="overview" aria-pressed="false">Overview</button>
+        <button type="button" id="detail" aria-pressed="true">Area</button>
+      </div>
+    </div>
+    <svg class="map" id="map" viewBox="0 0 720 330" role="img" aria-label="Split route map">
+      <defs>
+        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r=".8" fill="#45635a" opacity=".45" />
+        </pattern>
+      </defs>
+      <g id="regions"></g>
+      <g id="edges"></g>
+      <g id="stops"></g>
+      <g id="marker" visibility="hidden">
+        <circle class="marker-ring" r="12" />
+        <circle class="marker-core" r="5" />
+      </g>
+      <g id="results"></g>
+    </svg>
+    <footer class="footer">
+      <div class="place"><span id="place"></span><span class="phase" id="phase">Connecting</span></div>
+      <span class="counter" id="count">0 / 0 splits</span>
+    </footer>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sites = [
+        [70, 246], [137, 130], [214, 217], [271, 119], [329, 63], [364, 171],
+        [433, 112], [477, 243], [528, 172], [569, 77], [623, 147], [648, 238],
+      ];
+      const route = {
+        areaNames: [],
+        nodes: [],
+        paths: [
+          { from: 1, to: 2, d: 'M 137 130 C 180 125 166 211 214 217' },
+          { from: 0, to: 2, d: 'M 70 246 Q 140 301 214 217' },
+        ],
+      };
+      const areaWidth = 720;
+      const areaHeight = 330;
+      const areaGap = 24;
+      const finish = 'finish';
+      const duration = 470;
+      const svgNamespace = 'http://www.w3.org/2000/svg';
+      const { getSession, formatTime } = window.LiveSplit;
+      const session = getSession();
+      const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      const byId = id => document.getElementById(id);
+      const game = byId('game'), timer = byId('timer'), delta = byId('delta'), comparison = byId('comparison');
+      const areaLabel = byId('area'), place = byId('place'), phaseLabel = byId('phase'), count = byId('count');
+      const map = byId('map'), regions = byId('regions'), edges = byId('edges'), stops = byId('stops');
+      const marker = byId('marker'), results = byId('results');
+      const overview = byId('overview'), detail = byId('detail'), modes = byId('modes');
+      const phaseLabels = {
+        connecting: 'Connecting', disconnected: 'Disconnected', not_running: 'Ready',
+        running: 'Current', paused: 'Paused', ended: 'Finished',
+      };
+      let geometry;
+      let previousRun;
+      let previousContext;
+      let trail = [];
+      let mode = 'area';
+      let markerMotion;
+      let cameraMotion;
+      let resultTimer;
+      let queued = false;
+      let operations = [];
+
+      function setText(element, value) {
+        if (element.textContent !== value) element.textContent = value;
+      }
+
+      function svg(tag, attributes = {}, text) {
+        const element = document.createElementNS(svgNamespace, tag);
+        for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+        if (text !== undefined) element.textContent = text;
+        return element;
+      }
+
+      function signed(value) {
+        return formatTime(value, value !== 0).replace(/^([+-]?)0:0?/, '$1').replace(/^-/, '−');
+      }
+
+      function setTone(element, value) {
+        element.dataset.tone = value < 0 ? 'ahead' : value > 0 ? 'behind' : '';
+      }
+
+      function drawMap(segments) {
+        regions.replaceChildren();
+        edges.replaceChildren();
+        stops.replaceChildren();
+        const overrides = new Map(route.nodes.map(node => [node.split, node]));
+        const points = segments.map((segment, position) => {
+          const [x, y] = sites[position % sites.length];
+          const configured = overrides.get(segment.index);
+          return { split: segment.index, name: segment.name, x, y, area: Math.floor(position / sites.length),
+            ...configured, automaticX: configured?.x === undefined };
+        });
+        if (points.length) {
+          const [x, y] = sites[points.length % sites.length];
+          points.push({ split: finish, name: 'Finish', area: points.at(-1).area, automaticX: true,
+            x: points.length % sites.length ? x : 677, y: points.length % sites.length ? y : 280 });
+        }
+        const areaIds = [...new Set(points.map(point => point.area))].sort((a, b) => a - b);
+        const columns = Math.min(3, areaIds.length) || 1;
+        const areas = new Map(areaIds.map((id, index) => {
+          const row = Math.floor(index / columns);
+          const column = row % 2 ? columns - 1 - index % columns : index % columns;
+          const x = column * (areaWidth + areaGap), y = row * (areaHeight + areaGap);
+          const label = route.areaNames[id] ?? `Area ${String(index + 1).padStart(2, '0')}`;
+          const bounds = { x: x + 1, y: y + 1, width: areaWidth - 2, height: areaHeight - 2, rx: 11 };
+          regions.append(svg('rect', { ...bounds, class: 'region' }), svg('rect', { ...bounds, class: 'region-pattern' }),
+            svg('text', { x: x + 23, y: y + 35, class: 'region-label' }, label));
+          return [id, { x, y, label, mirrored: row % 2 === 1, view: [x, y, areaWidth, areaHeight] }];
+        }));
+        const bySplit = new Map(points.map(point => {
+          const area = areas.get(point.area);
+          point.x = area.x + (area.mirrored && point.automaticX ? areaWidth - point.x : point.x);
+          point.y += area.y;
+          point.element = svg('g', { class: 'stop', 'data-split': point.split, transform: `translate(${point.x} ${point.y})` });
+          const label = Array.from(point.name);
+          point.element.append(svg('title', {}, point.name), svg('circle', { r: point.split === finish ? 8 : 6 }),
+            svg('text', { y: 25 }, label.length > 18 ? `${label.slice(0, 17).join('')}…` : point.name));
+          stops.append(point.element);
+          return [point.split, point];
+        }));
+
+        const key = (from, to) => `${from}/${to}`;
+        const links = new Map(points.slice(1).map((point, index) => {
+          const from = points[index].split;
+          return [key(from, point.split), { from, to: point.split }];
+        }));
+        for (const path of route.paths) {
+          if (!bySplit.has(path.from) || !bySplit.has(path.to)) continue;
+          const id = key(path.from, path.to);
+          links.set(id, { ...path, branch: !links.has(id) });
+        }
+        for (const [id, link] of links) {
+          const from = bySplit.get(link.from), to = bySplit.get(link.to);
+          link.d ??= `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+          link.element = svg('path', { d: link.d, class: link.branch ? 'edge branch' : 'edge', 'data-edge': id });
+          edges.append(link.element);
+        }
+        return { areas, bySplit, points, links, key, fullView: [0, 0,
+          columns * (areaWidth + areaGap) - areaGap,
+          Math.max(1, Math.ceil(areaIds.length / columns)) * (areaHeight + areaGap) - areaGap] };
+      }
+
+      function setView(point, milliseconds = 0) {
+        const area = geometry.areas.get(point?.area);
+        const detailView = area && (mode === 'area' || geometry.areas.size === 1);
+        const view = detailView ? area.view : geometry.fullView;
+        const target = view.join(' ');
+        const { x, y, width, height } = map.viewBox.animVal;
+        map.toggleAttribute('data-overview', Boolean(area) && !detailView);
+        map.dataset.area = point?.area ?? '';
+        setText(areaLabel, !area ? 'Waiting for a run' : detailView ? area.label : `All areas · ${area.label}`);
+        if (map.getAttribute('viewBox') === target && milliseconds) return;
+        cameraMotion?.remove();
+        cameraMotion = undefined;
+        map.setAttribute('viewBox', target);
+        if (!milliseconds || !detailView || width === 0) return;
+        const animation = svg('animate', { attributeName: 'viewBox', from: `${x} ${y} ${width} ${height}`,
+          to: target, dur: `${milliseconds}ms`, begin: 'indefinite' });
+        cameraMotion = animation;
+        animation.addEventListener('endEvent', () => {
+          if (cameraMotion !== animation) return;
+          animation.remove();
+          cameraMotion = undefined;
+        }, { once: true });
+        map.append(animation);
+        animation.beginElement();
+      }
+
+      function linkBetween(from, to) {
+        return geometry.links.get(geometry.key(from.split, to.split));
+      }
+
+      function selectedLinks(points) {
+        return new Set(points.slice(1).map((point, index) => linkBetween(points[index], point)).filter(Boolean));
+      }
+
+      function journey(before, after) {
+        let shared = 0;
+        while (shared < before.length && before[shared] === after[shared]) shared++;
+        if (!shared) return [];
+        const backwards = before.slice(shared).reverse().map((point, index) => {
+          const next = before[before.length - 2 - index];
+          return { link: linkBetween(next, point), next, reverse: true };
+        });
+        const forwards = after.slice(shared).map((point, index) => ({
+          link: linkBetween(after[shared + index - 1], point), next: point, reverse: false,
+        }));
+        const steps = [...backwards, ...forwards];
+        return steps.length <= 5 && steps.every(step => step.link) ? steps : [];
+      }
+
+      function positionMarker(point) {
+        marker.setAttribute('visibility', point ? 'visible' : 'hidden');
+        if (point) marker.setAttribute('transform', `translate(${point.x} ${point.y})`);
+      }
+
+      function applyTrail(next, animate) {
+        markerMotion?.remove();
+        markerMotion = undefined;
+        const steps = animate ? journey(trail, next) : [];
+        const selected = selectedLinks(next);
+        const previous = steps.length ? selectedLinks(trail) : selected;
+        for (const link of geometry.links.values()) {
+          link.element.classList.toggle('is-passed', selected.has(link) && previous.has(link));
+        }
+        trail = next;
+        if (!steps.length) {
+          positionMarker(trail.at(-1));
+          setView(trail.at(-1));
+          return;
+        }
+        const time = Math.min(duration, 900 / steps.length);
+        let index = 0;
+        function play({ link, next, reverse }) {
+          marker.removeAttribute('transform');
+          marker.setAttribute('visibility', 'visible');
+          const motion = svg('animateMotion', { path: link.d, rotate: 0, dur: `${time}ms`, begin: 'indefinite',
+            keyPoints: reverse ? '1;0' : '0;1', keyTimes: '0;1', calcMode: 'linear' });
+          markerMotion = motion;
+          motion.addEventListener('endEvent', () => {
+            if (markerMotion !== motion) return;
+            motion.remove();
+            markerMotion = undefined;
+            link.element.classList.toggle('is-passed', selected.has(link));
+            positionMarker(next);
+            if (steps[++index]) play(steps[index]);
+          }, { once: true });
+          marker.append(motion);
+          setView(next, time);
+          motion.beginElement();
+        }
+        play(steps[0]);
+      }
+
+      function clearResult() {
+        clearTimeout(resultTimer);
+        results.replaceChildren();
+      }
+
+      function showResult(split, name, method) {
+        const point = geometry.bySplit.get(split.index);
+        const value = Object.hasOwn(split.deltas, name) ? split.deltas[name][method] : null;
+        if (!point || value == null) return;
+        const label = signed(value);
+        const width = Math.max(62, label.length * 9 + 16);
+        const callout = svg('g', { class: 'result', 'data-split': split.index, transform: `translate(${point.x} ${point.y - 22})` });
+        setTone(callout, value);
+        callout.append(svg('rect', { x: -width / 2, y: -25, width, height: 25, rx: 6 }), svg('text', { y: -8 }, label));
+        results.append(callout);
+        resultTimer = setTimeout(clearResult, 1400);
+      }
+
+      function render(events) {
+        const { run, phase, status, splitIndex, attempt, context, delta: latestDelta } = session.getState();
+        const segments = run?.segments ?? [];
+        const ended = phase === 'ended';
+        const method = context?.timingMethod ?? 'realTime';
+        const name = context?.comparison ?? '';
+        const passed = ended ? segments.length : segments.filter(segment => segment.index < splitIndex).length;
+        const changed = run !== previousRun;
+        const reset = events.some(event => event.type === 'reset' || event.type === 'start');
+        if (changed) {
+          geometry = drawMap(segments);
+          previousRun = run;
+          modes.hidden = geometry.areas.size < 2;
+        }
+        const first = geometry.points[0];
+        const current = ended ? geometry.bySplit.get(finish) : geometry.bySplit.get(splitIndex) ?? geometry.points[passed];
+        const completed = new Set(attempt?.segments.filter(segment => (ended || segment.index < splitIndex)
+          && (segment.splitTime.realTime !== null || segment.splitTime.gameTime !== null)).map(segment => segment.index));
+        const next = current ? [...new Set([first, ...geometry.points.filter(point => completed.has(point.split)), current])] : [];
+        const moved = trail.length !== next.length || trail.some((point, index) => point !== next[index]);
+        for (const point of geometry.points) {
+          point.element.classList.toggle('is-current', point === current);
+          point.element.classList.toggle('is-complete', completed.has(point.split) || (ended && point === current));
+        }
+        if (changed || moved || reset) {
+          const animate = !changed && !reset && !reducedMotion.matches && events.some(event =>
+            ['split', 'skip', 'undo'].includes(event.type) && event.splitIndex === splitIndex);
+          applyTrail(next, animate);
+        }
+
+        setText(game, run?.gameName || 'LiveSplit');
+        setText(place, current?.name ?? '');
+        place.title = current?.name ?? '';
+        setText(phaseLabel, phaseLabels[phase ?? status] ?? 'Ready');
+        setText(count, `${passed} / ${segments.length} splits`);
+        const value = latestDelta[method];
+        setText(delta, value === null ? '' : signed(value));
+        setTone(delta, value);
+        setText(comparison, name ? (value === null ? name : `vs ${name}`) : '');
+
+        if (events.length || changed || previousContext?.comparison !== name || previousContext?.timingMethod !== method) clearResult();
+        previousContext = context;
+        const split = events.findLast(event => ['split', 'skip', 'undo', 'reset', 'start'].includes(event.type));
+        if (split?.type === 'split' && split.result && split.splitIndex === splitIndex) showResult(split.result, name, method);
+      }
+
+      function scheduleRender() {
+        if (queued) return;
+        queued = true;
+        // The confirmed state arrives immediately before its operation events.
+        queueMicrotask(() => {
+          queued = false;
+          const events = operations;
+          operations = [];
+          render(events);
+        });
+      }
+
+      function selectMode(value) {
+        mode = value;
+        overview.setAttribute('aria-pressed', String(mode === 'overview'));
+        detail.setAttribute('aria-pressed', String(mode === 'area'));
+        setView(trail.at(-1));
+      }
+
+      overview.addEventListener('click', () => selectMode('overview'));
+      detail.addEventListener('click', () => selectMode('area'));
+      reducedMotion.addEventListener('change', ({ matches }) => {
+        if (matches && geometry) applyTrail(trail, false);
+      });
+      session.subscribeState(scheduleRender);
+      session.subscribeClock(clock => setText(timer, formatTime(clock[clock.timingMethod])));
+      for (const type of ['split', 'skip', 'undo', 'reset', 'start']) {
+        session.on(type, event => { operations.push(event); scheduleRender(); });
+      }
+    });
+  </script>
+</body>
+</html>

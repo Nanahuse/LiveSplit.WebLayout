@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LiveSplit · Split Ribbon</title>
+  <script type="module" src="./src/entry.ts"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 8px;
+      background: transparent;
+      color: #f3f1ff;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .layout {
+      --accent: #b9a7ff;
+      --muted: #a8a7bc;
+      --neutral: #a8adbf;
+      --ahead: #90edb7;
+      --behind: #ffa0b2;
+      box-sizing: border-box;
+      max-width: 1000px;
+      margin-inline: auto;
+      padding: clamp(12px, 2.7vw, 26px);
+      padding-block: clamp(12px, 2.4vw, 22px);
+      border: 1px solid #403951;
+      border-radius: 18px;
+      background: radial-gradient(ellipse at top left, #28213c, #12111ef5 65%);
+    }
+    .layout[data-phase="paused"] { --accent: #ffcd83; }
+    .summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+    }
+    .game, .segment, .comparison {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .game, .phase, .comparison, .progress-label, .card-detail {
+      font-size: clamp(.65rem, 1.45vw, .78rem);
+      font-weight: 700;
+      letter-spacing: .095em;
+      text-transform: uppercase;
+    }
+    .game { margin: 0; color: var(--accent); }
+    .segment {
+      margin: 3px 0 5px;
+      font-size: clamp(1rem, 4vw, 2rem);
+      line-height: 1.12;
+    }
+    .phase { color: var(--muted); }
+    .timing { text-align: right; min-width: 0; }
+    .timer, .delta, .progress-count { font-variant-numeric: tabular-nums; }
+    .timer {
+      display: block;
+      font-size: clamp(1.55rem, 7.2vw, 4.45rem);
+      font-weight: 800;
+      letter-spacing: -.055em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .timing-meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 8px;
+      max-width: clamp(112px, 35vw, 340px);
+      min-height: 1.2em;
+      margin: 4px 0 0 auto;
+      color: var(--muted);
+    }
+    .delta { color: var(--tone, var(--neutral)); font-weight: 750; white-space: nowrap; }
+    .comparison:empty, .delta:empty { display: none; }
+    .timing-method { flex: none; }
+    .comparison:not(:empty) + .timing-method::before { content: "· "; }
+    [data-tone="ahead"] { --tone: var(--ahead); }
+    [data-tone="behind"] { --tone: var(--behind); }
+    [data-tone="neutral"] { --tone: var(--neutral); }
+    .progress { margin: clamp(12px, 2.5vw, 22px) 0 12px; }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .progress-label { color: var(--muted); }
+    .progress-count { font-size: .92rem; font-weight: 750; }
+    .ticks {
+      display: grid;
+      grid-template-columns: repeat(var(--count, 1), minmax(0, 1fr));
+      gap: min(2px, calc(35% / var(--count, 1)));
+      height: 6px;
+      border-radius: 3px;
+      background: #272538;
+      overflow: hidden;
+    }
+    .tick { background: var(--tone, #37344b); }
+    .tick[data-tone="current"] { background: var(--accent); }
+    .track {
+      --card-gap: clamp(4px, 1vw, 10px);
+      --card-width: calc((100% - 4 * var(--card-gap)) / 5);
+      position: relative;
+      height: clamp(72px, 12vw, 96px);
+      overflow: hidden;
+    }
+    .card {
+      position: absolute;
+      inset: 0 auto 0 calc((100% - var(--card-width)) / 2);
+      box-sizing: border-box;
+      width: var(--card-width);
+      transform: translateX(calc(var(--slot, 0) * (100% + var(--card-gap))));
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 4px;
+      padding: clamp(6px, 1.25vw, 12px);
+      border: 1px solid #39364b;
+      border-radius: 9px;
+      background: #1d1a2c;
+    }
+    .track[data-sliding] .card { transition: transform 350ms cubic-bezier(.22, .75, .23, 1); }
+    .card[data-state="passed"] {
+      border-top: 2px solid var(--tone);
+      background: #222032;
+    }
+    .card[data-state="current"] {
+      z-index: 1;
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+      background: #332a51;
+    }
+    .layout[data-phase="not_running"] .card[data-state="current"] {
+      border-color: #736791;
+      box-shadow: none;
+      background: #28223b;
+    }
+    .layout[data-phase="paused"] .card[data-state="current"] { background: #3a2d30; }
+    .card-name {
+      align-self: start;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      color: #e6e2f6;
+      font-size: clamp(.69rem, 1.9vw, 1.06rem);
+      font-weight: 720;
+      line-height: 1.18;
+    }
+    .card-detail {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--tone, var(--muted));
+      font-variant-numeric: tabular-nums;
+    }
+    .card[data-state="current"] .card-detail { color: var(--accent); }
+    .card.is-best { animation: best-flash 480ms ease-out; }
+    @keyframes best-flash {
+      0%, 25% { border-color: #ffdc9b; background: #50412a; }
+      100% { border-color: #39364b; border-top-color: var(--tone); }
+    }
+    @media (max-width: 480px) {
+      .card { padding-inline: 5px; }
+      .card-detail { font-size: .56rem; letter-spacing: 0; text-transform: none; }
+    }
+    @media (max-height: 235px) {
+      .layout { padding-block: 10px; }
+      .progress { margin-block: 8px; }
+      .track { height: 68px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .track[data-sliding] .card { transition: none; }
+      .card.is-best { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout" data-phase="connecting">
+    <header class="summary">
+      <div>
+        <p class="game" id="game">LiveSplit</p>
+        <h1 class="segment" id="segment">Waiting for splits</h1>
+        <div class="phase" id="phase">Connecting</div>
+      </div>
+      <div class="timing">
+        <span class="timer" id="timer">—</span>
+        <div class="timing-meta">
+          <span class="comparison" id="comparison"></span>
+          <span class="comparison timing-method" id="timing-method"></span>
+          <span class="delta" id="delta"></span>
+        </div>
+      </div>
+    </header>
+    <section class="progress" aria-labelledby="progress-label">
+      <div class="progress-header">
+        <span class="progress-label" id="progress-label">Overall progress</span>
+        <span class="progress-count" id="progress-count">0 / 0</span>
+      </div>
+      <div class="ticks" id="ticks" role="progressbar" aria-labelledby="progress-label" aria-valuemin="0" aria-hidden="true"></div>
+    </section>
+    <div class="track" id="track" role="list" aria-label="Nearby splits"></div>
+  </main>
+  <template id="card-template">
+    <div class="card" role="listitem">
+      <span class="card-name"></span>
+      <span class="card-detail"></span>
+    </div>
+  </template>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { getSession, formatTime } = window.LiveSplit;
+      const session = getSession();
+      const layout = document.querySelector('.layout');
+      const byId = id => document.getElementById(id);
+      const game = byId('game');
+      const segmentName = byId('segment');
+      const phaseLabel = byId('phase');
+      const timer = byId('timer');
+      const comparisonLabel = byId('comparison');
+      const methodLabel = byId('timing-method');
+      const headerDelta = byId('delta');
+      const progressCount = byId('progress-count');
+      const ticks = byId('ticks');
+      const track = byId('track');
+      const cardTemplate = byId('card-template');
+      const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      const phaseLabels = {
+        connecting: 'Connecting', disconnected: 'Disconnected', not_running: 'Ready',
+        running: 'Running', paused: 'Paused', ended: 'Finished',
+      };
+      const cards = new Map();
+      const bestSplits = new Set();
+      let progressTicks = [];
+      let previousRun;
+      let previousMethod;
+      let center = -1;
+      let renderQueued = false;
+      let move = false;
+      let snap = false;
+
+      function setText(element, text) {
+        if (element.textContent !== text) element.textContent = text;
+      }
+
+      function formatDelta(delta) {
+        return formatTime(delta, delta !== 0).replace(/^([+-]?)0:0?/, '$1').replace(/^-/, '−');
+      }
+
+      function toneOf(delta) {
+        if (delta === null || delta === 0) return 'neutral';
+        return delta < 0 ? 'ahead' : 'behind';
+      }
+
+      function drawCards(segments, nextCenter, outcomes, { phase, clearHighlights, animate }) {
+        const first = Math.max(0, nextCenter - 2);
+        const visible = segments.slice(first, nextCenter + 3);
+        const visibleKeys = new Set(visible.map(segment => segment.index));
+        for (const [index, card] of cards) {
+          if (visibleKeys.has(index)) continue;
+          card.element.remove();
+          cards.delete(index);
+        }
+
+        const entryOffset = animate ? Math.max(-5, Math.min(5, nextCenter - center)) : 0;
+        let inserted = false;
+        visible.forEach((segment, offset) => {
+          const position = first + offset;
+          const outcome = outcomes.get(segment.index);
+          const slot = position - nextCenter;
+          let card = cards.get(segment.index);
+          if (!card) {
+            const element = cardTemplate.content.firstElementChild.cloneNode(true);
+            const [name, detail] = element.children;
+            card = { element, name, detail };
+            cards.set(segment.index, card);
+            element.dataset.index = segment.index;
+            element.style.setProperty('--slot', slot + entryOffset);
+            const following = visible.slice(offset + 1).find(segment => cards.has(segment.index));
+            track.insertBefore(element, following ? cards.get(following.index).element : null);
+            inserted = true;
+          }
+          const current = position === nextCenter && phase !== 'ended';
+          const status = current ? 'current' : outcome ? 'passed' : 'pending';
+          card.element.dataset.state = status;
+          card.element.dataset.tone = outcome ? toneOf(outcome.delta) : '';
+          if (current) card.element.setAttribute('aria-current', 'step');
+          else card.element.removeAttribute('aria-current');
+          if (!outcome || clearHighlights) card.element.classList.remove('is-best');
+
+          setText(card.name, segment.name);
+          card.name.title = segment.name;
+          let detail = slot === 1 ? 'Next' : 'Later';
+          if (current) detail = phase === 'paused' ? 'Paused' : 'Current';
+          if (outcome) {
+            detail = outcome.actual == null ? 'No time' : 'Clear';
+            if (outcome.delta !== null) detail = formatDelta(outcome.delta);
+          }
+          setText(card.detail, detail);
+        });
+
+        // Read the initial transforms of incoming cards before moving them into view.
+        if (animate && inserted) void track.offsetWidth;
+        visible.forEach((segment, offset) => {
+          const { element } = cards.get(segment.index);
+          element.style.setProperty('--slot', first + offset - nextCenter);
+          if (!reducedMotion.matches && outcomes.has(segment.index) && bestSplits.has(segment.index)) {
+            element.classList.remove('is-best');
+            void element.offsetWidth;
+            element.classList.add('is-best');
+          }
+        });
+      }
+
+      function render() {
+        const { status, run, context, attempt, phase, splitIndex, delta } = session.getState();
+        const segments = run?.segments ?? [];
+        const method = context?.timingMethod ?? 'realTime';
+        const comparison = context?.comparison ?? '';
+        const actualTimes = new Map(attempt?.segments.map(segment => [segment.index, segment.splitTime[method]]));
+        const passed = phase === 'ended' ? segments.length : segments.filter(segment => segment.index < splitIndex).length;
+        const nextCenter = Math.min(passed, segments.length - 1);
+        const outcomes = new Map(segments.slice(0, passed).map(segment => {
+          const actual = actualTimes.get(segment.index);
+          const target = Object.hasOwn(segment.comparisons, comparison) ? segment.comparisons[comparison][method] : null;
+          return [segment.index, { actual, delta: actual == null || target === null ? null : actual - target }];
+        }));
+
+        const displayPhase = status === 'connected' ? phase ?? 'not_running' : status;
+        layout.dataset.phase = displayPhase;
+        setText(phaseLabel, phaseLabels[displayPhase]);
+        setText(game, run?.gameName || 'LiveSplit');
+        setText(segmentName, segments[nextCenter]?.name ?? 'Waiting for splits');
+        game.title = run?.gameName ?? '';
+        segmentName.title = segments[nextCenter]?.name ?? '';
+        setText(comparisonLabel, comparison);
+        comparisonLabel.title = comparison;
+        setText(methodLabel, context ? (method === 'gameTime' ? 'IGT' : 'RT') : '');
+        headerDelta.dataset.tone = toneOf(delta[method]);
+        setText(headerDelta, delta[method] === null ? '' : formatDelta(delta[method]));
+
+        const runChanged = run !== previousRun;
+        if (runChanged) {
+          progressTicks = segments.map(() => {
+            const tick = document.createElement('span');
+            tick.className = 'tick';
+            return tick;
+          });
+          ticks.replaceChildren(...progressTicks);
+          ticks.style.setProperty('--count', Math.max(1, segments.length));
+        }
+        const progressText = `${passed} / ${segments.length}`;
+        setText(progressCount, progressText);
+        ticks.setAttribute('aria-hidden', String(!segments.length));
+        ticks.setAttribute('aria-valuemax', Math.max(1, segments.length));
+        ticks.setAttribute('aria-valuenow', passed);
+        segments.forEach((segment, position) => {
+          const outcome = outcomes.get(segment.index);
+          progressTicks[position].dataset.tone = outcome ? toneOf(outcome.delta) : position === nextCenter ? 'current' : 'pending';
+        });
+
+        const shifted = center !== nextCenter;
+        const animate = shifted && move && !snap && !runChanged && center >= 0 && !reducedMotion.matches;
+        if (shifted || snap || runChanged) track.toggleAttribute('data-sliding', animate);
+        drawCards(segments, nextCenter, outcomes, {
+          phase, animate, clearHighlights: snap || runChanged || previousMethod !== method,
+        });
+        previousRun = run;
+        previousMethod = method;
+        center = nextCenter;
+      }
+
+      function queueRender() {
+        if (renderQueued) return;
+        renderQueued = true;
+        // Session publishes the confirmed snapshot before its operation events.
+        queueMicrotask(() => {
+          renderQueued = false;
+          render();
+          move = snap = false;
+          bestSplits.clear();
+        });
+      }
+
+      function queueMove({ splitIndex }) {
+        if (splitIndex !== session.getState().splitIndex) return;
+        move = true;
+        queueRender();
+      }
+
+      function queueSnap() {
+        snap = true;
+        bestSplits.clear();
+        queueRender();
+      }
+
+      track.addEventListener('animationend', event => {
+        if (event.animationName === 'best-flash') event.target.classList.remove('is-best');
+      });
+      reducedMotion.addEventListener('change', ({ matches }) => {
+        if (!matches) return;
+        track.removeAttribute('data-sliding');
+        for (const { element } of cards.values()) element.classList.remove('is-best');
+      });
+      session.subscribeState(queueRender);
+      session.subscribeClock(clock => setText(timer, formatTime(clock[clock.timingMethod])));
+      session.on('start', queueSnap);
+      session.on('split', queueMove);
+      session.on('skip', queueMove);
+      session.on('undo', queueMove);
+      session.on('reset', queueSnap);
+      session.on('best-segment', ({ result, timingMethods }) => {
+        if (!timingMethods.includes(session.getState().context?.timingMethod)) return;
+        bestSplits.add(result.index);
+        queueRender();
+      });
+    });
+  </script>
+</body>
+</html>
