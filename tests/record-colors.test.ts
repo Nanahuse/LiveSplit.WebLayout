@@ -45,6 +45,18 @@ test('live timer color responds to phase and changes in comparison delta', () =>
   assert.equal(timerColor(model, null), 'unknown');
 });
 
+test('running timer uses the unknown color when the selected comparison has no time', () => {
+  const s = fixture();
+  const target = s.run.segments[s.timer.splitIndex].comparisons.find(c => c.name === s.context.currentComparison)!;
+  delete target.time.realTimeTicks;
+  let { model, clock } = readSnapshot(s);
+  assert.equal(timerColor(model, clock.realTime), 'unknown');
+
+  target.time.realTimeTicks = 0n;
+  ({ model, clock } = readSnapshot(s));
+  assert.equal(timerColor(model, clock.realTime), 'behind-losing');
+});
+
 test('record effect settings validate colors independently', () => {
   const root = { getAttribute: (name: string) => ({ 'pb-effect': 'rainbow', 'bs-effect': 'none' })[name as 'pb-effect'] } as Element;
   assert.equal(recordEffect(root, 'pb-effect'), 'rainbow');

@@ -69,10 +69,10 @@
 ## 操作イベント
 
 - `start`、`split`、`skip`、`undo`、`reset`、`pause`、`resume`
-- `finish` は最終区間の `split` の直後
+- `finish` はBridgeが完走状態を通知した `split` の直後
 - `personal-best` と `best-segment` は、比較に必要な値を確認できた場合に通知。対象の計測方法は `timingMethods` で取得
 
-各イベントは`type`、Bridgeの`sequence`、操作直後の`phase`と`splitIndex`、`result`を持ちます。Splitの`result`には区間の`index`、`name`、`splitTime`、`variables`、比較名をキーにした`deltas`が含まれます。ResetやUndoが同期前に続いて区間実測が上書きされた場合、当該Splitの`result`は`null`です。
+各イベントは`type`、Bridgeの`sequence`、操作直後の`phase`と`splitIndex`、`result`を持ちます。Splitの`result`には区間の`index`、`name`、`splitTime`、`variables`、比較名をキーにした`deltas`が含まれます。Attemptの同期前にResetやUndoで区間の実測タイムが消えた場合、その`split`の`result`は`null`です。最終Splitでは続けて`finish`も`result: null`で通知し、その後で`reset`または`undo`を通知します。
 
 同期済み状態を公開してから、受信した操作を受信順に通知します。初期接続・再接続時は現在の状態を復元します。過去の操作は発火しません。
 

@@ -13,9 +13,8 @@ export function timerColor(run: RunReadout, now: number | null) {
   if (run.phase === 'ended') return !run.attemptFresh || run.finalTime === null ? 'unknown' : run.personalBest ? 'pb' : 'behind-losing';
   if (run.phase !== 'running') return 'unknown';
   const comparison = run.comparisons.rows.get(run.index)?.get('');
-  if (!comparison) return 'unknown';
-  return comparisonColor(comparison.target === null ? 0 : now - comparison.target,
-    comparison.target === null || run.index === 0 ? null : comparison.previousDelta);
+  if (comparison?.target == null) return 'unknown';
+  return comparisonColor(now - comparison.target, run.index === 0 ? null : comparison.previousDelta);
 }
 
 export type RecordEffect = 'color' | 'rainbow' | 'none';
