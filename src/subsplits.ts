@@ -1,8 +1,10 @@
+import { active } from './bridge-state.ts';
+import type { ClockState } from './bridge-state.ts';
+import { clockTime } from './readout.ts';
 import type { RunReadout } from './readout.ts';
 import type { SplitSettings } from './split-settings.ts';
-import { columnValue, liveSeconds } from './columns.ts';
+import { columnValue, methodRun } from './columns.ts';
 import type { Column } from './columns.ts';
-import { seconds } from './splits.ts';
 
 export const subsplitDefaults = {
   MinimumMajorSplits: 0, IndentSubsplits: true, HideSubsplits: false, ShowSubsplits: false,
@@ -70,36 +72,31 @@ export function subsplitRows(names: string[], position: number, s: SubsplitSetti
   }
   return rows.slice(0, s.VisualSplitCount);
 }
-export function methodRun(run: RunReadout, method?: string) {
-  return !method || method === 'Current Timing Method' || method.replace(' ', '') === run.values.get('gettimingmethod')
-    ? run : run.methods.get(method.replace(' ', ''));
-}
 function difference(a: number | null | undefined, b: number | null | undefined) { return a == null || b == null ? null : a - b; }
-export function sectionTimes(run: RunReadout, group: Section, comparison: string) {
+export function sectionTimes(run: RunReadout, group: Section, comparison: string, clock?: ClockState) {
   const key = comparison === 'Current Comparison' || !run.comparisons.rows.get(group.end)?.has(comparison) ? '' : comparison;
   const target = (i: number) => run.comparisons.rows.get(i)?.get(key)?.target;
-  const actual = (i: number) => { const t = run.history.rows.get(i)?.time; return t ? seconds(t) : null; };
-  const time = !run.attemptFresh || group.start > run.history.index ? null
-    : difference(group.end < run.history.index ? actual(group.end) : liveSeconds(run.liveTime), group.start > 0 ? actual(group.start - 1) : 0);
+  const now = clockTime(run, clock);
+  const time = !run.attemptFresh || group.start > run.index ? null
+    : difference(group.end < run.index ? run.splitTimes.get(group.end) : now, group.start > 0 ? run.splitTimes.get(group.start - 1) : 0);
   const reference = difference(target(group.end), group.start > 0 ? target(group.start - 1) : 0);
-  return { time, reference, delta: difference(time, reference), cumulative: difference(liveSeconds(run.liveTime), target(group.end)) };
+  return { time, reference, delta: difference(time, reference), cumulative: difference(now, target(group.end)) };
 }
-export function subsplitValue(run: RunReadout, row: SubsplitRow, column: Column, live: boolean, best: boolean) {
-  if (!row.collapsed) return columnValue(run, row.index, column, live, best);
+export function subsplitValue(run: RunReadout, row: SubsplitRow, column: Column, live: boolean, best: boolean, clock?: ClockState) {
+  if (!row.collapsed) return columnValue(run, row.index, column, live, best, clock);
   const model = methodRun(run, column.timingMethod);
-  if (!model) return { value: null, delta: column.type.includes('Delta') };
   const base = columnValue(model, row.index, { ...column, timingMethod: 'Current Timing Method' }, false, best);
   const type = column.type;
   // Fixed reference columns and custom variables keep their explicitly defined semantics.
   if (['ComparisonTime', 'ComparisonSegmentTime', 'CustomVariable', 'SplitTime'].includes(type)) return base;
-  const group = sectionTimes(model, { start: row.start, end: row.index }, column.comparison);
-  const completed = row.index < model.history.index;
-  const active = row.start <= model.history.index && model.history.index <= row.index && ['Running', 'Paused'].includes(model.history.phase);
+  const group = sectionTimes(model, { start: row.start, end: row.index }, column.comparison, clock);
+  const completed = row.index < model.index;
+  const isActive = row.start <= model.index && model.index <= row.index && active(model.phase);
   const segment = type.startsWith('Segment');
   const deltaType = type.includes('Delta');
-  if (type === 'LiveTime') return { value: active ? liveSeconds(model.liveTime) : base.value, delta: false };
+  if (type === 'LiveTime') return { value: isActive ? clockTime(model, clock) : base.value, delta: false };
   if (deltaType) {
-    const eligible = active && live && ((!segment && group.cumulative !== null && group.cumulative > 0) || (group.delta !== null && group.delta > 0));
+    const eligible = isActive && live && ((!segment && group.cumulative !== null && group.cumulative > 0) || (group.delta !== null && group.delta > 0));
     const delta = completed ? segment ? group.delta
       : columnValue(model, row.index, { ...column, type: 'Delta', timingMethod: 'Current Timing Method' }, false).value
       : eligible ? segment ? group.delta : group.cumulative : null;

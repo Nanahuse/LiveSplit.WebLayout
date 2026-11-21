@@ -28,13 +28,13 @@
 
 ## 属性と優先順位
 
-`Columns` の設定は[列設定](columns.md)を参照してください。`total-splits` / `upcoming-splits` / `always-show-last-split`属性はそれぞれ対応するsettingsより優先します。最終区間固定を無効にするには`always-show-last-split="false"`を指定します。表示行数は1〜1000、先読み行数は0以上の整数で、先読みは利用できる表示行数に収まるよう調整されます。
+`Columns` の設定は[列設定](columns.md)を参照してください。表示行数は1〜1000、先読み行数は0以上の整数で、先読みは利用できる表示行数に収まるよう調整されます。
 
 `live-delta="false"`で現在区間のライブ差分を無効にできます。省略時は有効です。
 
 ## 動作・制限
 
-Accuracyは `Seconds` / `Tenths` / `Hundredths` / `Milliseconds`。差分は本体と同様、1分未満なら `+1.2` のように表示し、ゼロにプラス記号を付けません。現在・未到達区間のDelta / Segment Deltaは表示条件が成立するまで空欄です。ライブ値の元タイマーは現在1/100秒精度のため、Milliseconds指定でもライブ差分にそれ以上の精度はありません。
+Accuracyは `Seconds` / `Tenths` / `Hundredths` / `Milliseconds`。差分は本体と同様、1分未満なら `+1.2` のように表示し、ゼロにプラス記号を付けません。現在・未到達区間のDelta / Segment Deltaは表示条件が成立するまで空欄です。Millisecondsを指定すると、ライブ差分も秒の小数第3位まで表示します。
 
 Bridgeの個別Best SegmentとBest Segments比較を使ってライブ差分の開始条件を判定します。比較や必要な時間が未設定の場合は「—」です。
 
@@ -44,7 +44,7 @@ Bridgeの個別Best SegmentとBest Segments比較を使ってライブ差分の�
 
 ## CSSの対象属性
 
-セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、`data-column-type` は[列設定](columns.md)のtypeです。現在区間のセルには `data-live-column`、行には `data-split-index` が付きます。列は次のように装飾できます。
+セルの `data-comparison` は比較名、`data-column` は `comparison-time` / `delta` / `time`、`data-column-type` は[列設定](columns.md)のtypeです。区間行には `data-split-index`、現在行には `aria-current="step"` が付きます。列は次のように装飾できます。
 
 ```css
 livesplit-splits [data-column="comparison-time"] { opacity: .65; }

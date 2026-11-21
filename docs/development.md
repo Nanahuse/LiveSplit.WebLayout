@@ -11,7 +11,7 @@ pnpm install --frozen-lockfile
 pnpm build
 ```
 
-`dist/` に `index.html`（全パーツの例）、`timer.html`（透過タイマー）、`livesplit.js`（通常のスクリプト）、`livesplit.css` を出力します。HTMLとJS・CSSを一緒に配置すればローカルファイルで表示できます。ビルドで `dist/` は置き換わるため、利用者のレイアウトは別フォルダーに保存します。
+`dist/` に `index.html`（標準パーツとSplit演出の例）、`livesplit.js`（通常のスクリプト）、`livesplit.css` を出力します。HTMLとJS・CSSを一緒に配置すればローカルファイルで表示できます。ビルドで `dist/` は置き換わるため、利用者のレイアウトは別フォルダーに保存します。
 
 ## 開発・検証コマンド
 
@@ -27,9 +27,9 @@ pnpm run test:live
 
 ## ソース構成とプロトコル生成
 
-通信層は `src/bridge-client.ts`、JSONの検証・変換は `src/bridge-protocol.ts`、表示モデルへの変換は `src/bridge-state.ts`、パーツは `src/components.ts`、共通CSSは `src/parts.css`。公式JSON Schemaはリポジトリに保存せず、`schemas/SOURCE.json` に取得元・固定コミット・参照パスを記録します。`generate:protocol` はGitHub上の固定コミットからSchemaをメモリ上に取得し、内部のcamelCase型と検証用定義を `src/generated/protocol.ts` に生成します。SchemaのJSONファイルは書き出しません。生成時にはNode.jsとインターネット接続が必要です。
+通信層は `src/bridge-client.ts`、JSONの検証・変換は `src/bridge-protocol.ts`、数値状態と時計への変換は `src/bridge-state.ts`、購読と操作通知は `src/session.ts` と `src/session-events.ts` にあります。表示の計算は `src/readout.ts`、Light DOMへのlit-html描画は `src/components.ts` と `src/split-view.ts`、共通CSSは `src/parts.css` にあります。公式JSON Schemaはリポジトリに保存せず、`schemas/SOURCE.json` に取得元・固定コミット・参照パスを記録します。`generate:protocol` はGitHub上の固定コミットからSchemaをメモリ上に取得し、内部のcamelCase型と検証用定義を `src/generated/protocol.ts` に生成します。SchemaのJSONファイルは書き出しません。生成時にはNode.jsとインターネット接続が必要です。
 
-生成済みのコードを保存しているため、通常のビルド・テストや配布HTMLの表示時にはSchemaを取得しません。表示にNode.js・HTTPサーバー・インターネット接続は不要です。wireのnullable値は内部ではundefined、ticksはbigintとして扱います。Protobufランタイムは不要です。
+生成済みのコードを保存しているため、通常のビルド・テストや配布HTMLの表示時にはSchemaを取得しません。表示にNode.js・HTTPサーバー・インターネット接続は不要です。wireのnullable値は内部ではundefined、ticksはbigintとして扱います。Viteはlit-htmlを `livesplit.js` にまとめます。
 
 ## 内部設計：同期と復元
 
@@ -39,13 +39,13 @@ pnpm run test:live
 
 - Eventsを先に接続し、RPCでTimer / Attempt / Run / Context / Completed Countを取得します。
 - 初期取得中・RPC待ちのイベントを世代番号で検出し、古い応答を破棄して再取得します。
-- Timerイベントは時計を即時反映し、Attemptと完走回数を再取得します。Runは初期接続・Run変更・Reset時に取得します。Resetのtimer_stateがnullでも全状態を取り直します。
-- RPCとEventsのどちらかが切断した場合、時計の補間を止め、両接続と全状態を再構築します。session_id変更やevent_sequenceの欠落・逆順も同じです。最初のイベント番号は任意です。
+- Timerイベントは時計に即時反映します。Attempt・Context・完走回数を取り直してから状態を公開し、操作を受信順に通知します。Runは初期接続・Run変更・Reset時に取得します。Resetのtimer_stateがnullでも全状態を取り直します。
+- RPCとEventsのどちらかが切断した場合、時計の補間を止め、両接続と全状態を再構築します。session_id変更やevent_sequenceの欠落・逆順も同じです。最初のイベント番号は任意です。最後に受信した番号と同じイベントは一度だけ処理します。
 
 ### メッセージ・時刻・再同期
 
-- JSON v4のText Messageを使います。IDはuint32、event_sequenceは最大値4294967295の次に1へ循環します。ticksはJSONを読み取る段階で精度を保ち、内部ではbigintで保持します。描画時の数値変換のみ秒単位にします。
-- Timer/Contextは750ms周期で再同期します。補間は最後の取得から最大2秒に制限し、RPCタイムアウトで再接続します。
+- JSON v4のText Messageを使います。IDはuint32、event_sequenceは最大値4294967295の次に1へ循環します。ticksはJSONを読み取る段階で精度を保ち、内部ではbigintで保持します。Sessionの公開データは秒単位です。
+- Timer/Contextは750ms周期で再同期します。補間は最後の取得から最大2秒に制限し、RPCタイムアウトで再接続します。走行中のフレーム更新は時計購読があるときに実行します。区間表は行をキー付きで描画し、時計の通知では現在区間など時計を使うセルだけを更新します。
 - 全区間の比較・現在Attemptは復元可能です。過去すべてのAttempt履歴はv4にありません。
 - 複数LiveSplitは各パーツのserver属性でポートを分けます。同じ接続先はRPC/Eventsの2接続を共有します。
 

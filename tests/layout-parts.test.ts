@@ -1,47 +1,60 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Window } from 'happy-dom';
-import { RunReadout } from '../src/readout.ts';
-import { configureLayout, detailedComparisons, layoutTemplates, renderDetailed } from '../src/layout-parts.ts';
-import { clockParts } from '../src/presentation-settings.ts';
+import { clockParts } from '../src/timer.ts';
+import { fixture } from './bridge-fixture.ts';
+import { readSnapshot } from './readout-fixture.ts';
 
-test('native text settings bind custom variables and change back to fixed two-row text', async () => {
+test('declarative text and detailed timer views use native settings', async () => {
   const dom = new Window();
+  Object.assign(globalThis, { document: dom.document });
   try {
-    const root = dom.document.createElement('livesplit-text');
-    root.innerHTML = layoutTemplates['livesplit-text'];
-    root.setAttribute('settings', JSON.stringify({ Text1: 'Deaths', Text2: 'Death Count', CustomVariable: true, Display2Rows: true }));
-    configureLayout(root as unknown as HTMLElement);
-    assert.equal(root.dataset.twoRows, 'true');
-    assert.equal(root.querySelector('[data-text-side="left"]')?.textContent, 'Deaths');
-    assert.equal(root.querySelector('[data-text-side="right"]')?.getAttribute('data-ls-variable'), 'Death Count');
-    root.setAttribute('settings', JSON.stringify({ Text2: 'Fixed' }));
-    configureLayout(root as unknown as HTMLElement);
-    assert.equal(root.dataset.twoRows, 'false');
-    assert.equal(root.querySelector('[data-ls-variable]'), null);
-    assert.equal(root.querySelector('[data-text-side="right"]')?.textContent, 'Fixed');
-  } finally { await dom.happyDOM.close(); }
-});
+    const { render } = await import('lit-html');
+    const { detailedTimerView, textView } = await import('../src/layout-parts.ts');
+    const s = fixture();
+    s.context.customVariables['Death Count'] = '<img>';
+    let { state } = readSnapshot(s);
 
-test('detailed timer uses current comparison and native visibility and size settings', async () => {
-  const dom = new Window();
-  try {
-    const root = dom.document.createElement('livesplit-detailed-timer');
-    root.innerHTML = layoutTemplates['livesplit-detailed-timer'];
-    const element = root as unknown as HTMLElement;
-    root.style.setProperty('--ls-decimal-size', '.8em');
-    configureLayout(element);
-    assert.deepEqual(detailedComparisons(element), ['', 'Best Segments']);
-    assert.ok(root.querySelector('.ls-segment-name')?.hasAttribute('hidden'));
-    root.setAttribute('settings', JSON.stringify({ ShowSplitName: true, HideComparison: true, Comparison: 'Average Segments', DecimalsSize: 50 }));
-    configureLayout(element);
-    assert.equal(root.querySelector('.ls-segment-name')?.hasAttribute('hidden'), false);
-    assert.ok(root.querySelector('[data-comparison-value="2"]')?.parentElement?.hasAttribute('hidden'));
-    assert.equal(root.style.getPropertyValue('--ls-setting-decimal-size'), '0.5em');
-    assert.equal(root.style.getPropertyValue('--ls-decimal-size'), '.8em');
-    assert.deepEqual(detailedComparisons(element), ['Average Segments', 'Best Segments']);
-    root.setAttribute('settings', '{"DisplayIcon":true}');
-    assert.throws(() => configureLayout(element), /未対応/);
+    const text = dom.document.createElement('livesplit-text') as unknown as HTMLElement;
+    text.setAttribute('settings', JSON.stringify({ Text1: 'Deaths', Text2: 'Death Count', CustomVariable: true, Display2Rows: true }));
+    render(textView(text).view(state), text);
+    assert.equal(text.dataset.twoRows, 'true');
+    assert.equal(text.querySelector('[data-text-side="left"]')?.textContent, 'Deaths');
+    assert.equal(text.querySelector('[data-text-side="right"]')?.textContent, '<img>');
+    assert.equal(text.querySelector('img'), null);
+    text.setAttribute('settings', JSON.stringify({ Text2: 'Fixed' }));
+    text.setAttribute('left-field', 'game');
+    render(textView(text).view(state), text);
+    assert.equal(text.dataset.twoRows, 'false');
+    assert.equal(text.querySelector('[data-text-side="left"]')?.textContent, 'Game');
+    assert.equal(text.querySelector('[data-text-side="right"]')?.textContent, 'Fixed');
+
+    const timer = dom.document.createElement('livesplit-detailed-timer') as unknown as HTMLElement;
+    timer.style.setProperty('--ls-decimal-size', '.8em');
+    render(detailedTimerView(timer, 'color')(state), timer);
+    assert.ok(timer.querySelector('.ls-segment-name')?.hasAttribute('hidden'));
+    assert.equal(timer.querySelector('dt')?.textContent, 'Personal Best');
+    assert.equal(timer.querySelector('dd')?.textContent, '1:00.00');
+
+    timer.setAttribute('settings', JSON.stringify({ ShowSplitName: true, HideComparison: true, Comparison: 'Average Segments', DecimalsSize: 50 }));
+    render(detailedTimerView(timer, 'color')(state), timer);
+    assert.equal(timer.querySelector('.ls-segment-name')?.hasAttribute('hidden'), false);
+    assert.ok(timer.querySelector('dd')?.parentElement?.nextElementSibling?.hasAttribute('hidden'));
+    assert.equal(timer.querySelector<HTMLElement>('.ls-detailed')?.style.getPropertyValue('--ls-setting-decimal-size'), '0.5em');
+    assert.equal(timer.style.getPropertyValue('--ls-decimal-size'), '.8em');
+    assert.equal(timer.querySelector('dt')?.textContent, 'Average Segments');
+    assert.equal(timer.querySelector('dd')?.textContent, '—');
+    timer.setAttribute('settings', '{"DisplayIcon":true}');
+    assert.throws(() => detailedTimerView(timer, 'color'), /未対応/);
+
+    s.timer.phase = 'ended';
+    s.timer.splitIndex = 3;
+    ({ state } = readSnapshot(s));
+    timer.setAttribute('settings', '{"Comparison":"Personal Best"}');
+    render(detailedTimerView(timer, 'color')(state), timer);
+    assert.equal(timer.querySelector('dd')?.textContent, '1:00.00');
+    timer.setAttribute('settings', JSON.stringify({ Comparison: 'bad\nname' }));
+    assert.throws(() => detailedTimerView(timer, 'color'), /Invalid comparison/);
   } finally { await dom.happyDOM.close(); }
 });
 
@@ -50,45 +63,4 @@ test('clock formatting supports minimum digits and independent precision without
   assert.deepEqual(clockParts(9.999, '1:23', '.2'), { whole: '0:09', fraction: '.9' });
   assert.deepEqual(clockParts(9.999, '1:23:45', ''), { whole: '0:00:09', fraction: '' });
   assert.deepEqual(clockParts(-3601.12, '1', '.23'), { whole: '-1:00:01', fraction: '.12' });
-});
-
-test('detailed comparison times need a baseline and preserve segment references after finish', async () => {
-  const dom = new Window();
-  try {
-    const root = dom.document.createElement('livesplit-detailed-timer');
-    root.innerHTML = layoutTemplates['livesplit-detailed-timer'];
-    root.setAttribute('comparison1', 'Personal Best');
-    const element = root as unknown as HTMLElement;
-    const run = new RunReadout();
-    run.history.phase = 'Running'; run.history.index = 2;
-    run.comparisons.rows.set(2, new Map([['Personal Best', { target: 100, previousDelta: null }]]));
-    renderDetailed(run, element);
-    assert.equal(root.querySelector('[data-comparison-value="1"]')?.textContent, '—');
-    run.comparisons.rows.get(2)!.get('Personal Best')!.segmentTarget = 30;
-    renderDetailed(run, element);
-    assert.equal(root.querySelector('[data-comparison-value="1"]')?.textContent, '0:30.00');
-    run.history.phase = 'Ended'; run.history.index = 3;
-    renderDetailed(run, element);
-    assert.equal(root.querySelector('[data-comparison-value="1"]')?.textContent, '0:30.00');
-    root.setAttribute('comparison1', 'Current Comparison');
-    assert.deepEqual(detailedComparisons(element), ['', 'Best Segments']);
-    root.setAttribute('comparison1', 'bad\ncommand');
-    assert.throws(() => detailedComparisons(element));
-  } finally { await dom.happyDOM.close(); }
-});
-
-test('text can switch from fields back to literals', async () => {
-  const dom = new Window();
-  try {
-    const root = dom.document.createElement('livesplit-text');
-    root.innerHTML = layoutTemplates['livesplit-text'];
-    root.setAttribute('left-field', 'game');
-    configureLayout(root as unknown as HTMLElement);
-    assert.equal(root.querySelector('[data-text-side="left"]')?.getAttribute('data-ls-field'), 'game');
-    root.removeAttribute('left-field'); root.setAttribute('left', '<img>');
-    configureLayout(root as unknown as HTMLElement);
-    assert.equal(root.querySelector('[data-text-side="left"]')?.textContent, '<img>');
-    assert.equal(root.querySelector('[data-ls-field]'), null);
-    assert.equal(root.querySelector('img'), null);
-  } finally { await dom.happyDOM.close(); }
 });

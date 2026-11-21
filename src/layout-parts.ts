@@ -1,86 +1,85 @@
-import type { RunReadout } from './readout.ts';
-import { presentation, clockParts } from './presentation-settings.ts';
-import { segmentMetrics } from './segment-metrics.ts';
-import { liveSeconds } from './columns.ts';
+import { html } from 'lit-html';
+import { styleMap } from 'lit-html/directives/style-map.js';
+import type { ClockState, SessionState } from './bridge-state.ts';
+import { watchClock } from './clock-part.ts';
+import { fieldUsesClock, fieldValue } from './metrics.ts';
+import { presentation } from './presentation-settings.ts';
+import { clockParts } from './timer.ts';
+import { clockTime, readout, own, segmentMetrics, splitSummary } from './readout.ts';
+import { timerColor } from './record-colors.ts';
+import type { RecordEffect } from './record-colors.ts';
+import type { Session } from './session.ts';
 
-export const layoutTemplates: Record<string, string> = {
-  'livesplit-hotkey-indicator': '<span class="ls-hotkey-bar" aria-hidden="true"></span><span class="ls-label">Global Hotkeys</span><span class="ls-value" data-ls-field="hotkey-status" role="status">—</span>',
-  'livesplit-detailed-timer': '<div class="ls-detailed"><div class="ls-timer" role="timer"><span data-ls-field="whole">—:—</span><span class="ls-fraction" data-ls-field="fraction">.—</span></div><div class="ls-segment-name" data-ls-field="current-split">—</div><div class="ls-segment-time"><span data-segment-whole>—</span><span class="ls-segment-fraction" data-segment-fraction></span></div><dl class="ls-comparison-times"><div><dt data-comparison-label="1"></dt><dd data-comparison-value="1">—</dd></div><div><dt data-comparison-label="2"></dt><dd data-comparison-value="2">—</dd></div></dl></div>',
-  'livesplit-text': '<div class="ls-text"><span data-text-side="left"></span><span data-text-side="right"></span></div>',
-};
-export function detailedComparisons(root: Element): string[] {
+export function detailedTimerView(root: Element, pbEffect: RecordEffect) {
   const settings = presentation(root);
-  return [root.getAttribute('comparison1') ?? settings.Comparison, root.getAttribute('comparison2') ?? settings.Comparison2]
-    .map(name => name === 'Current Comparison' ? '' : name)
-    .map(name => { if (/[\r\n\0]/.test(name)) throw new Error('Invalid comparison'); return name; });
-}
-export function configureLayout(root: HTMLElement) {
-  if (!['livesplit-text', 'livesplit-detailed-timer', 'livesplit-hotkey-indicator'].includes(root.localName)) return;
-  const settings = presentation(root);
-  if (root.localName === 'livesplit-hotkey-indicator') {
-    root.style.setProperty('--ls-setting-hotkey-height', `${settings.IndicatorHeight}px`);
-    root.style.setProperty('--ls-setting-hotkey-width', `${settings.IndicatorWidth}px`);
-    root.style.setProperty('--ls-setting-hotkey-on', settings.HotkeysOnColor);
-    root.style.setProperty('--ls-setting-hotkey-off', settings.HotkeysOffColor);
-  }
-  if (root.localName === 'livesplit-detailed-timer') {
-    const name = root.querySelector<HTMLElement>('.ls-segment-name'); if (name) name.hidden = !settings.ShowSplitName;
-    const second = root.querySelector<HTMLElement>('[data-comparison-value="2"]')?.parentElement; if (second) second.hidden = settings.HideComparison;
-    root.style.setProperty('--ls-setting-segment-ratio', `${settings.SegmentTimerSizeRatio / 100}`);
-    root.style.setProperty('--ls-setting-decimal-size', `${settings.DecimalsSize / 100}em`);
-    root.style.setProperty('--ls-setting-segment-decimal-size', `${settings.SegmentTimerDecimalsSize / 100}em`);
-  }
-  if (root.localName === 'livesplit-text') {
-    root.dataset.twoRows = String(settings.Display2Rows);
-    for (const side of ['left', 'right']) {
-      const element = root.querySelector<HTMLElement>(`[data-text-side="${side}"]`);
-      if (!element) continue;
-      const literal = root.getAttribute(side) ?? (side === 'left' ? settings.Text1 : settings.Text2);
-      const variable = root.getAttribute(`${side}-variable`) ?? (side === 'right' && settings.CustomVariable ? literal : null);
-      delete element.dataset.lsVariable;
-      if (variable !== null) {
-        if (!variable.trim() || /[\r\n\0]/.test(variable)) throw new Error('Invalid custom variable name');
-        delete element.dataset.lsField; element.dataset.lsVariable = variable; element.textContent = '—'; continue;
-      }
-      const field = root.getAttribute(`${side}-field`);
-      if (field && /^[a-z-]+$/.test(field)) element.dataset.lsField = field;
-      else { delete element.dataset.lsField; element.textContent = literal; }
-    }
-  }
-
-}
-export function renderDetailed(run: RunReadout, root: HTMLElement) {
-  if (root.localName !== 'livesplit-detailed-timer') return;
-  const settings = presentation(root);
-  const writeClock = (value: number | null, digits: string, accuracy: string, whole: string, fraction: string) => {
-    const time = clockParts(value, digits, accuracy);
-    const w = root.querySelector(whole), f = root.querySelector(fraction);
-    if (w) w.textContent = time.whole; if (f) f.textContent = time.fraction;
-  };
-  writeClock(liveSeconds(run.liveTime), settings.DigitsFormat, settings.Accuracy, '[data-ls-field="whole"]', '[data-ls-field="fraction"]');
-  writeClock(segmentMetrics(run).segment, settings.SegmentDigitsFormat, settings.SegmentAccuracy, '[data-segment-whole]', '[data-segment-fraction]');
-  const index = run.referenceIndex;
-  detailedComparisons(root).forEach((comparison, i) => {
-    const label = root.querySelector(`[data-comparison-label="${i + 1}"]`);
-    const element = root.querySelector(`[data-comparison-value="${i + 1}"]`);
-    if (label) label.textContent = comparison || run.values.get('getcomparisonname') || 'Current Comparison';
-    // The two reference rows remain comparison segment times even after finish.
-    const snapshot = run.comparisons.rows.get(index)?.get(comparison);
-    const value = (comparison || run.values.get('getcomparisonname')) === 'Best Segments'
-      ? run.bestSegments.get(index) ?? null
-      : snapshot?.segmentTarget ?? null;
-    const time = clockParts(value, '1:23', { Seconds: '', Tenths: '.2', Hundredths: '.23' }[settings.SegmentTimesAccuracy]!);
-    if (element) element.textContent = time.whole + time.fraction;
+  const comparisons = [settings.Comparison, settings.Comparison2].map(name => {
+    if (/[\r\n\0]/.test(name)) throw new Error('Invalid comparison');
+    return name === 'Current Comparison' ? '' : name;
   });
+  const sizes = styleMap({
+    '--ls-setting-segment-ratio': String(settings.SegmentTimerSizeRatio / 100),
+    '--ls-setting-decimal-size': `${settings.DecimalsSize / 100}em`,
+    '--ls-setting-segment-decimal-size': `${settings.SegmentTimerDecimalsSize / 100}em`,
+  });
+  return (state: SessionState, session?: Session) => {
+    const run = readout(state);
+    const name = splitSummary(run).current;
+    const clocks = (clock?: ClockState) => {
+      const now = clockTime(run, clock);
+      const color = timerColor(run, now);
+      const record = color === 'pb' ? 'pb' : '';
+      const effect = record ? pbEffect : 'none';
+      const time = clockParts(clock?.[clock.timingMethod] ?? null, settings.DigitsFormat, settings.Accuracy);
+      const segment = clockParts(segmentMetrics(run, now).segment, settings.SegmentDigitsFormat, settings.SegmentAccuracy);
+      return html`<div class="ls-timer" role="timer" aria-live="off" data-timer-color=${color} data-record=${record} data-record-effect=${effect}><span>${time.whole}</span><span class="ls-fraction">${time.fraction}</span></div>
+        <div class="ls-segment-name" ?hidden=${!settings.ShowSplitName}>${name}</div>
+        <div class="ls-segment-time" data-timer-color=${color} data-record=${record} data-record-effect=${effect}><span>${segment.whole}</span><span class="ls-segment-fraction">${segment.fraction}</span></div>`;
+    };
+    const index = run.referenceIndex;
+    const references = comparisons.map((key, i) => {
+      const label = key || run.comparison || 'Current Comparison';
+      const value = label === 'Best Segments' ? run.bestSegments.get(index) ?? null
+        : run.comparisons.rows.get(index)?.get(key)?.segmentTarget ?? null;
+      const accuracy = { Seconds: '', Tenths: '.2', Hundredths: '.23' }[settings.SegmentTimesAccuracy]!;
+      const time = clockParts(value, '1:23', accuracy);
+      return html`<div ?hidden=${i === 1 && settings.HideComparison}><dt>${label}</dt><dd>${time.whole + time.fraction}</dd></div>`;
+    });
+    return html`<div class="ls-detailed" style=${sizes}>
+      ${session ? watchClock(session, clocks) : clocks()}
+      <dl class="ls-comparison-times">${references}</dl>
+    </div>`;
+  };
 }
 
-export function textVariables(root: HTMLElement): string[] {
-  const names = [...new Set([...root.querySelectorAll<HTMLElement>('[data-ls-variable]')].map(e => e.dataset.lsVariable!))];
-  if (names.some(name => !name.trim() || /[\r\n\0]/.test(name))) throw new Error('Invalid custom variable name');
-  return names;
+export function textView(root: HTMLElement) {
+  const settings = presentation(root);
+  root.dataset.twoRows = String(settings.Display2Rows);
+  const sides = (['left', 'right'] as const).map(side => {
+    const literal = root.getAttribute(side) ?? (side === 'left' ? settings.Text1 : settings.Text2);
+    const variable = root.getAttribute(`${side}-variable`) ?? (side === 'right' && settings.CustomVariable ? literal : null);
+    if (variable !== null && (!variable.trim() || /[\r\n\0]/.test(variable))) throw new Error('Invalid custom variable name');
+    return { side, literal, variable, field: variable === null ? root.getAttribute(`${side}-field`) : null };
+  });
+  return {
+    static: sides.every(side => side.field === null && side.variable === null),
+    view: (state: SessionState, session?: Session) => html`<div class="ls-text">${sides.map(({ side, literal, variable, field }) => {
+      const value = field !== null
+        ? session && fieldUsesClock(field) ? watchClock(session, clock => fieldValue(field, state, clock).text) : fieldValue(field, state).text
+        : variable !== null ? own(state.context?.variables, variable) ?? '—' : literal;
+      return html`<span data-text-side=${side}>${value}</span>`;
+    })}</div>`,
+  };
 }
-export function renderText(run: RunReadout, root: HTMLElement) {
-  for (const element of root.querySelectorAll<HTMLElement>('[data-ls-variable]')) {
-    element.textContent = run.values.get(`getcustomvariablevalue ${element.dataset.lsVariable}`) ?? '—';
-  }
+
+export function hotkeyView(root: Element) {
+  const settings = presentation(root);
+  const style = styleMap({
+    '--ls-setting-hotkey-height': `${settings.IndicatorHeight}px`,
+    '--ls-setting-hotkey-width': `${settings.IndicatorWidth}px`,
+    '--ls-setting-hotkey-on': settings.HotkeysOnColor,
+    '--ls-setting-hotkey-off': settings.HotkeysOffColor,
+  });
+  const label = root.getAttribute('label') ?? 'Global Hotkeys';
+  const hidden = root.hasAttribute('hide-label');
+  return () => html`<span class="ls-hotkey-bar" aria-hidden="true" data-hotkeys="unknown" style=${style}></span><span class="ls-label" ?hidden=${hidden}>${label}</span><span class="ls-value" role="status">取得不可</span>`;
 }

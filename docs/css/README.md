@@ -24,6 +24,6 @@ Shadow DOMを使わないため、部品の内部も通常のCSSで装飾でき�
 | PB・Best Segment・タイマー状態の色 | [記録色と状態色](record-colors.md) |
 | 特定の部品だけの変数 | [コンポーネント一覧](../components/README.md)から各部品のCSS節へ |
 | 区間表の幅・列幅・余白 | [Splitsの装飾](../components/splits/style.md) |
-| 部品内部のHTML構造 | [独自HTMLテンプレート](../components/custom-markup.md) |
+| JavaScriptで独自のHTMLを更新 | [JavaScript API](../javascript-api.md) |
 
 [カスタマイズ](../customization.md) / [目次](../README.md)

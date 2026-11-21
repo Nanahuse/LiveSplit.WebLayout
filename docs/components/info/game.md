@@ -18,15 +18,13 @@
 
 この部品固有の属性・settingsはありません。`server`・`class`・`style` は[共通設定](../common.md)を参照してください。
 
-## CSS・独自HTML
+## CSS
 
 | 変数・対象 | 用途 |
 |---|---|
 | `--ls-game-size` / `--ls-game-weight` / `--ls-game-color` | ゲーム名。既定1.5em / 700 / inherit |
 | `--ls-category-size` / `--ls-category-color` / `--ls-category-opacity` | カテゴリ。既定1em / inherit / .7 |
 | `.ls-game` / `.ls-category` | ゲーム名／カテゴリ。個別にdisplay:noneで非表示 |
-
-独自HTMLは`data-ls-field="game"` / `data-ls-field="category"`を使用します。単独表示なら[Value](value.md)も使えます。
 
 ## 動作・制限
 

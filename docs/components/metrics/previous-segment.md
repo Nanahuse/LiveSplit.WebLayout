@@ -36,13 +36,11 @@ ShowPossibleTimeSaveで「差分 / 短縮可能時間」を表示します。精
 
 [記録色・状態色の対象とタイミング](../../css/record-colors.md)も参照してください。
 
-## CSS・独自HTML
+## CSS
 
 ラベルは`.ls-label`、値は`.ls-value`です。`--ls-label-size` / `--ls-label-color` / `--ls-label-font`、`--ls-value-size` / `--ls-value-color` / `--ls-value-font`、`--ls-label-gap`を利用できます。枠・背景・余白は[共通CSS](../../css/common.md)を参照してください。
 
 差分の色は`--ls-ahead` / `--ls-behind`が値の通常色に優先します。
-
-独自テンプレートでは値を表示する要素に`data-ls-field="previous-segment-delta"`を指定します。この専用タグの内側で使用してください。専用settingsと計算は汎用Valueでは実行されません。
 
 ## 動作・制限
 

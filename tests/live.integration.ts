@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
 import { BridgeClient } from '../src/bridge-client.ts';
 import type { BridgeSocket, BridgeSnapshot } from '../src/bridge-client.ts';
-import { applyBridgeSnapshot } from '../src/bridge-state.ts';
-import { RunReadout } from '../src/readout.ts';
+import { readSnapshot } from './readout-fixture.ts';
 
 test('real Bridge v4: local-file origin synchronizes read-only and reconnects with full run', { timeout: 18000 }, async () => {
   const sockets: WebSocket[] = [];
@@ -15,9 +14,9 @@ test('real Bridge v4: local-file origin synchronizes read-only and reconnects wi
     createSocket: url => { const socket = new WebSocket(url, { origin: 'null' }); sockets.push(socket); return socket as unknown as BridgeSocket; },
     onStatus() {}, onSnapshot: (snapshot: BridgeSnapshot) => {
       try {
-        const model = new RunReadout(); applyBridgeSnapshot(model, snapshot, performance.now());
+        const { model, clock } = readSnapshot(snapshot, performance.now());
         assert.notEqual(snapshot.timer.phase, 'unspecified'); assert.equal(model.names.size, snapshot.run.segments.length);
-        console.log(`Bridge snapshot: ${model.values.get('getcurrenttimerphase')}, ${model.count} splits, ${model.liveTime}`);
+        console.log(`Bridge snapshot: ${model.phase}, ${model.count} splits, ${clock[model.timingMethod]}`);
         count++; if (count === 1) sockets[0].close(); else if (sockets.length >= 4) resolve();
       } catch (error) { reject(error as Error); }
     },

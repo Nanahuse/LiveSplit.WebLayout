@@ -26,15 +26,13 @@
 
 ラベルの変更・非表示と接続先は[共通設定](../common.md)を参照してください。
 
-## CSS・独自HTML
+## CSS
 
 | 変数・対象 | 用途 |
 |---|---|
 | `--ls-hotkey-height` / `--ls-hotkey-width` | settingsより優先する寸法 |
 | `--ls-hotkey-on` / `--ls-hotkey-off` / `--ls-hotkey-unknown` | 有効／無効／未知色。未知色は--ls-muted、既定#82919f |
 | `.ls-hotkey-bar` | 線の要素。data-hotkeysはon / off / unknown |
-
-独自HTMLでは`.ls-hotkey-bar`と`data-ls-field="hotkey-status"`を使います。`layout="row"`は対象外です。
 
 ## 動作・制限
 

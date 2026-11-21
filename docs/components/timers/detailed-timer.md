@@ -11,14 +11,12 @@
 ## カスタマイズ例
 
 ```html
-<livesplit-detailed-timer comparison1="Personal Best" comparison2="Best Segments"
-  settings='{"ShowSplitName":true,"SegmentAccuracy":".2","DecimalsSize":50}'
+<livesplit-detailed-timer
+  settings='{"Comparison":"Personal Best","Comparison2":"Best Segments","ShowSplitName":true,"SegmentAccuracy":".2","DecimalsSize":50}'
   style="--ls-timer-size:80px; --ls-segment-size:32px"></livesplit-detailed-timer>
 ```
 
 ## 属性・settings
-
-`comparison1` / `comparison2`属性は対応するsettingsより優先します。
 
 | 設定 | 型 | 既定値 | 用途 |
 | --- | --- | --- | --- |
@@ -31,9 +29,7 @@
 | `SegmentTimerSizeRatio` | 数値 | 40 | 区間時計のサイズ比率（%）。0〜1000 |
 | `DecimalsSize` / `SegmentTimerDecimalsSize` | 数値 | 35 | 各時計の小数サイズ（%）。0〜1000 |
 
-`comparison1` / `comparison2` は文字列属性です。省略時は上表のComparison / Comparison2を使用します。共通の `server`・記録色属性は[共通設定](../common.md)を参照してください。
-
-## CSS・独自HTML
+## CSS
 
 | 変数・対象 | 用途 |
 |---|---|
@@ -47,8 +43,6 @@
 | `.ls-segment-name` / `.ls-comparison-times` / `dt` / `dd` | 区間名／比較欄／比較名／比較値 |
 
 公開CSS変数 → settings → 既定値の順に優先します。`--ls-setting-*`は内部用です。[PB・状態色](../../css/record-colors.md)が時計の基本色に優先します。
-
-独自HTMLでは全体時計に`data-ls-field="whole|fraction"`、区間時計に`data-segment-whole` / `data-segment-fraction`、比較名と値に`data-comparison-label="1|2"` / `data-comparison-value="1|2"`を配置します。各`|`は選択肢を示し、属性値には片方を指定します。
 
 ## 動作・制限
 

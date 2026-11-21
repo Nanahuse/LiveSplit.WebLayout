@@ -19,18 +19,16 @@ Timer、Detailed Timer、区間タイマー、直前区間タイム、Splitsの�
 | `--ls-bs-color` | CSSの色 | #ffd700 | Best Segmentの指定色（金） |
 | `--ls-rainbow-duration` | CSSの時間 | 3.6s | レインボーの周期 |
 
-OSで動きを減らす設定が有効な場合、レインボーは指定色に固定します。PBのレインボーはこのWeb版の拡張です。
+OSで動きを減らす設定が有効な場合、レインボーは指定色に固定します。同タイムでは記録色は付きません。Best Segmentの判定には個別ベストと連続する確定タイムを使います。PBのレインボーはこのWeb版の拡張です。
 
 ## 判定と表示タイミング
 
 | 対象 | 記録色のタイミング |
 |---|---|
-| 全体タイマー（Detailed Timer内も含む） | 完走時に選択中比較より速い、または比較タイムが未設定ならPB色。途中のBS達成では色を変えない |
+| 全体タイマー（Detailed Timer内も含む） | 完走タイムがPersonal Bestより短い場合、またはPersonal Bestのタイムが明示的に未設定の場合にPB色 |
 | 現在区間タイマー | 公式Detailed TimerのSegmentTimerと同様、全体タイマーと同じ状態色・完走判定を使用 |
 | 直前区間タイム | 直前の確定区間がBSなら次の区間確定まで維持 |
-| Splits | BSを達成した完了行の差分セルを強調。通常の時間列とCustom Variable列は対象外 |
-
-TimerのPB色は完走時の選択中比較とAttemptの最終実測値から判定します。同タイムはPB色にしません。BSは個別Best Segmentの未設定・更新、またはBest Segmentsに対する区間差分が負の場合に判定します。
+| Splits | BSを達成した完了行の差分セルを強調 |
 
 リセット・切断・不整合な取得状態では効果を解除します。`data-record="pb|bs"`と`data-record-effect`で独自のCSS効果にも差し替えられます。
 
@@ -38,6 +36,6 @@ TimerのPB色は完走時の選択中比較とAttemptの最終実測値から判
 
 Timerの状態色は公式の優先順位（待機／負の時計 → ポーズ → 完走 → 走行中）に従います。走行中は現在累積差分の正負と直前差分から先行・遅延／回復・悪化を判定します。色は`--ls-not-running-color`、`--ls-paused-color`、`--ls-ahead-gaining-color`、`--ls-ahead-losing-color`、`--ls-behind-gaining-color`、`--ls-behind-losing-color`で変更できます。イベント直後はAttempt取得が完了するまで記録色の反映を保留します。
 
-過去の記録色との差異は[対応範囲と移行](../compatibility.md)、実装の参照元は[開発・検証](../development.md)にまとめています。
+実装の参照元は[開発・検証](../development.md)にまとめています。
 
 [CSS目次](README.md)

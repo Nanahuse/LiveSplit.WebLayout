@@ -2,15 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { splitSettings, splitNumber, splitDefaults } from '../src/split-settings.ts';
 import { columnsFor, columnValue } from '../src/columns.ts';
-import { RunReadout } from '../src/readout.ts';
+import { fixture, ticks } from './bridge-fixture.ts';
+import { readSnapshot } from './readout-fixture.ts';
 const root = (settings = {}) => ({ getAttribute: (name: string) => name === 'settings' ? JSON.stringify(settings) : null, hasAttribute: () => false }) as unknown as Element;
 
 test('native defaults and column labels match the official configuration', () => {
-  assert.deepEqual(columnsFor(root()).map(c => [c.name, c.type, c.comparison]), [['+/-', 'Delta', ''], ['Time', 'SplitTime', '']]);
+  assert.deepEqual(columnsFor(undefined).map(c => [c.name, c.type, c.comparison]), [['+/-', 'Delta', ''], ['Time', 'SplitTime', '']]);
   assert.deepEqual(splitSettings(root()), splitDefaults);
-  const c = columnsFor(root({ Columns: [{ Name: 'Best', Type: 'Segment Delta or Segment Time', Comparison: 'Best Segments', TimingMethod: 'Real Time' }] }))[0];
+  const c = columnsFor([{ Name: 'Best', Type: 'Segment Delta or Segment Time', Comparison: 'Best Segments', TimingMethod: 'Real Time' }])[0];
   assert.equal(c.type, 'SegmentDeltaorSegmentTime'); assert.equal(c.comparison, 'Best Segments'); assert.equal(c.timingMethod, 'Real Time');
-  assert.equal(columnsFor(root({ Columns: [{ Type: 'Segment Time', Comparison: 'Best Split Times' }] }))[0].comparison, '');
+  assert.equal(columnsFor([{ Type: 'Segment Time', Comparison: 'Best Split Times' }])[0].comparison, '');
 });
 test('accuracy truncates, drops long delta fractions, and omits plus for zero', () => {
   assert.equal(splitNumber(12.999, false, splitDefaults), '0:12');
@@ -21,9 +22,11 @@ test('accuracy truncates, drops long delta fractions, and omits plus for zero', 
   assert.equal(splitNumber(61.29, true, { ...splitDefaults, DropDecimals: false }), '+1:01.2');
 });
 test('unsupported timing data is never replaced by a different timing method', () => {
-  const run = new RunReadout(); run.values.set('gettimingmethod', 'RealTime');
-  run.comparisons.rows.set(0, new Map([['', { target: 100, previousDelta: 0 }]]));
-  const column = columnsFor(root({ Columns: [{ Type: 'Split Time', TimingMethod: 'Game Time' }] }))[0];
+  const s = fixture();
+  s.run.segments[0].comparisons[0].time = { realTimeTicks: ticks(100) };
+  s.timer.phase = 'not_running';
+  const { model: run } = readSnapshot(s);
+  const column = columnsFor([{ Type: 'Split Time', TimingMethod: 'Game Time' }])[0];
   assert.equal(columnValue(run, 0, column, true).value, null);
   column.timingMethod = 'Real Time'; assert.equal(columnValue(run, 0, column, true).value, 100);
 });

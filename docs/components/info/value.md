@@ -33,7 +33,7 @@
 | `current-split`, `previous-split`, `split-progress` | 現在区間・直前区間・進捗 |
 | `split-target`, `last-split` | 現在区間の比較累積タイム・直前の実測累積タイム |
 | `attempts`, `completed` | 挑戦・完走回数 |
-| `status`, `endpoint`, `split-note`, `readout-note` | 接続状態・接続先・補足説明 |
+| `status`, `endpoint` | 接続状態・接続先 |
 
 | 追加field | 内容 |
 |---|---|
@@ -44,15 +44,13 @@
 | `real-time` / `game-time` | 各計測方式の時計 |
 | `hotkey-status` | 現状は取得不可 |
 
-## CSS・独自HTML
+## CSS
 
-共通CSS変数と通常の`font-size`を使います。既定テンプレートの対象は`[data-ls-value]`です。ラベル付き部品専用の`--ls-value-size`は直接適用されません。
+共通CSS変数と通常の`font-size`を使います。既定テンプレートの対象は`.ls-unlabeled-value`です。ラベル付き部品専用の`--ls-value-size`は直接適用されません。
 
 ```css
-livesplit-value [data-ls-value] { font-size: 24px; }
+livesplit-value .ls-unlabeled-value { font-size: 24px; }
 ```
-
-独自HTMLには`<span data-ls-value></span>`を置くと、field属性の変更に追従します。任意の固定フィールドには`data-ls-field`も使用できます。
 
 ## 動作・制限
 

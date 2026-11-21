@@ -116,6 +116,7 @@ export function readReply(data: unknown): RpcReply {
   return decode(envelope, object) as RpcReply;
 }
 export function readResult(method: Query, result: unknown): unknown { return decode(defs[resultTypes[method]], result); }
-export function readEvent(data: unknown): ChangedEvent | ResetEvent | TimerEvent {
-  return decode({ oneOf: ['TimerEvent', 'ResetEvent', 'ChangedEvent'].map(name => ({ $ref: `#/$defs/${name}` })) }, parseBridgeJson(data)) as ChangedEvent | ResetEvent | TimerEvent;
+export type BridgeEvent = ChangedEvent | ResetEvent | TimerEvent;
+export function readEvent(data: unknown): BridgeEvent {
+  return decode({ oneOf: ['TimerEvent', 'ResetEvent', 'ChangedEvent'].map(name => ({ $ref: `#/$defs/${name}` })) }, parseBridgeJson(data)) as BridgeEvent;
 }

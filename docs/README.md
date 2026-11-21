@@ -1,6 +1,6 @@
 # ドキュメント
 
-LiveSplitの表示をブラウザー・OBSで使い、HTMLとCSSでレイアウトを作るためのガイドです。
+LiveSplitの表示をブラウザー・OBSで使い、HTML・CSS・JavaScriptでレイアウトを作るためのガイドです。
 
 ## 初めて使う
 
@@ -18,12 +18,12 @@ LiveSplitの表示をブラウザー・OBSで使い、HTMLとCSSでレイアウ�
 | ラベル・共通属性を調べる | [部品の共通設定](components/common.md) |
 | 枠・文字・背景・配置を調整する | [CSS設定](css/README.md)・[共通変数](css/common.md) |
 | PB・Best Segment・状態の色を変える | [記録色と状態色](css/record-colors.md) |
-| 自分のHTML構造で表示する | [独自HTMLテンプレート](components/custom-markup.md) |
+| Splitや記録更新で表示を切り替える | [JavaScript API](javascript-api.md) |
 | 区間表の列・行数・装飾を変更する | [Splits](components/splits/README.md) |
 | 区間をグループ化する | [Subsplits](components/splits/subsplits.md) |
 | 接続先を変更する・複数のLiveSplitを表示する | [接続設定](connection.md) |
 | 表示されない・接続できない・設定が反映されない | [トラブルシューティング](troubleshooting.md) |
-| 公式との機能差・制限や旧設定を確認する | [対応範囲と移行](compatibility.md) |
+| 公式との機能差や制限を確認する | [対応範囲](compatibility.md) |
 
 ## 開発・保守する
 

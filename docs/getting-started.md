@@ -10,9 +10,8 @@
 
 | ファイル | 用途 |
 | --- | --- |
-| `index.html` | 全パーツの配置例。最初の表示確認に使用 |
-| `timer.html` | OBS向けの透過タイマーだけの配置例 |
-| `livesplit.js` | 表示パーツを登録するJavaScript。HTMLと一緒に配置 |
+| `index.html` | 標準パーツとSplit演出の配置例 |
+| `livesplit.js` | 表示パーツと `window.LiveSplit` を登録するJavaScript。HTMLと一緒に配置 |
 | `livesplit.css` | 初期スタイル。HTMLと一緒に配置。編集・差し替え・省略も可能 |
 
 ZIPにはREADME、ドキュメント、ライセンス、`VERSION.txt`も含まれます。ソースからビルドする場合は[開発・検証](development.md)を参照してください。
@@ -31,8 +30,6 @@ Bridge自体はレイアウトに表示されません。対応環境や更新�
 
 既定のRPC接続先は `ws://127.0.0.1:54000/bridge/v4/rpc` です。同じポートの `/bridge/v4/events` にも自動で接続します。Bridge側で接続先やポートを変更している場合は[接続設定](connection.md)に従って指定します。
 
-必要なのはLiveSplit.Bridgeです。LiveSplit内蔵WebSocketや旧Protobuf v3には対応していません。旧版からの変更点は[対応範囲と移行](compatibility.md)を参照してください。
-
 ## 3. ブラウザーで表示を確認する
 
 展開先の `dist/index.html` を直接開きます。接続状態が「接続済み」になり、LiveSplitで計測を始めるとタイマーが進むことを確認してください。HTTP経由での表示も利用できます。
@@ -45,12 +42,12 @@ Bridge自体はレイアウトに表示されません。対応環境や更新�
 2. 「ローカルファイル」を有効にし、展開先の `dist/index.html` を指定します。
 3. ソースの幅・高さをレイアウトに合わせます。
 
-タイマーだけを透過背景で表示する場合は `dist/timer.html` を選びます。
+Splitするとサンプルが結果表示に切り替わり、2.5秒後にタイマーへ戻ります。
 
 ## 5. 自分のレイアウトを作る
 
-`index.html` または `timer.html` を選び、`livesplit.js`・`livesplit.css` と一緒に別フォルダーへコピーします。HTMLを編集して保存し、ブラウザーやOBSでそのHTMLを読み込み直します。編集後の再ビルドは不要です。
+`index.html` を `livesplit.js`・`livesplit.css` と一緒に別フォルダーへコピーします。HTMLを編集して保存し、ブラウザーやOBSでそのHTMLを読み込み直します。編集後の再ビルドは不要です。
 
-開発時の `dist/` は次のビルドで置き換わるため、自分のレイアウトは別フォルダーに保存してください。基本のHTML、部品の追加、属性・CSSの変更は[カスタマイズ](customization.md)で説明します。
+開発時の `dist/` は次のビルドで置き換わるため、自分のレイアウトは別フォルダーに保存してください。部品の配置や装飾は[カスタマイズ](customization.md)、Splitをきっかけに表示を変更する方法は[JavaScript API](javascript-api.md)を参照してください。
 
 [カスタマイズへ](customization.md) / [目次](README.md)

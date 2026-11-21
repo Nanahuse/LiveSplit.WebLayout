@@ -48,7 +48,7 @@ file:///C:/layouts/layout.html?server=ws%3A%2F%2F127.0.0.1%3A54001%2Fbridge%2Fv4
 </section>
 ```
 
-同じページで同じ接続先を使う部品はRPC・Eventsの2接続を共有します。部品を増やしても接続数は増えません。最後の部品を取り除くと、その接続を閉じます。
+同じページで同じ接続先を使う部品はRPC・Eventsの2接続を共有します。部品を増やしても接続数は増えません。JavaScriptも同じ接続を共有します。その接続先の部品とJavaScriptの購読がすべてなくなると接続を閉じます。
 
 ## 接続状態と切断時の表示
 
@@ -60,12 +60,12 @@ file:///C:/layouts/layout.html?server=ws%3A%2F%2F127.0.0.1%3A54001%2Fbridge%2Fv4
 | `connected` | 接続済み |
 | `disconnected` | 再接続待ち。Statusに理由を表示する場合あり |
 | `error` | 接続先URL・JSON・設定値などの設定エラー |
-| `static` | 固定Text。通信不要 |
+| `static` | 固定Textなど。通信不要 |
 
 通信が切れると時計の補間を止め、表示データをクリアして自動で再接続します。接続後は全区間の比較と現在のAttemptを取り直すため、計測途中から表示できます。過去すべてのAttempt履歴は取得できません。
 
 時計とContext（Custom Variableなど）は750ms周期で再同期します。イベントでも更新し、時計の補間は最後の取得から最大2秒に制限します。
 
-接続できない場合は[トラブルシューティング](troubleshooting.md)、旧URLからの移行は[対応範囲と移行](compatibility.md)、同期アルゴリズムは[開発・検証](development.md)を参照してください。
+接続できない場合は[トラブルシューティング](troubleshooting.md)、JavaScriptからの接続は[JavaScript API](javascript-api.md)、同期アルゴリズムは[開発・検証](development.md)を参照してください。
 
 [目次](README.md)
